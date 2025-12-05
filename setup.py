@@ -14,7 +14,7 @@ setup(
     description="An open-source tool that analyzes historical Spark job runs to recommend optimal resource configurations",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/spark-resource-optimizer",
+    url="https://github.com/gridatek/spark-resource-optimizer",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     classifiers=[

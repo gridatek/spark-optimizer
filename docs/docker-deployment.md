@@ -17,7 +17,7 @@ This guide covers deploying the Spark Resource Optimizer using Docker and Docker
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/spark-resource-optimizer.git
+git clone https://github.com/gridatek/spark-resource-optimizer.git
 cd spark-resource-optimizer
 
 # Copy environment file
@@ -637,5 +637,5 @@ kubectl logs -f deployment/spark-optimizer-api
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/yourusername/spark-resource-optimizer/issues
+- GitHub Issues: https://github.com/gridatek/spark-resource-optimizer/issues
 - Documentation: https://spark-optimizer.readthedocs.io

@@ -695,5 +695,5 @@ print(analysis.suggestions)
 ## Support
 
 For issues, questions, or feature requests:
-- GitHub Issues: https://github.com/yourusername/spark-resource-optimizer/issues
+- GitHub Issues: https://github.com/gridatek/spark-resource-optimizer/issues
 - Documentation: https://spark-optimizer.readthedocs.io

@@ -12,7 +12,7 @@ setup(
     description="Optimize Spark job resources based on historical data",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/spark-resource-optimizer",
+    url="https://github.com/gridatek/spark-resource-optimizer",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[
@@ -222,7 +222,7 @@ Thank you for your interest in contributing!
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/spark-resource-optimizer.git
+git clone https://github.com/gridatek/spark-resource-optimizer.git
 cd spark-resource-optimizer
 ```
 

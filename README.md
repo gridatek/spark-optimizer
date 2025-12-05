@@ -30,7 +30,7 @@ An open-source tool that analyzes historical Spark job runs to recommend optimal
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/spark-resource-optimizer.git
+git clone https://github.com/gridatek/spark-resource-optimizer.git
 cd spark-resource-optimizer
 
 # Install dependencies
