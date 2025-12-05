@@ -10,7 +10,7 @@ setup(
     name="spark-resource-optimizer",
     version="0.1.0",
     author="Gridatek",
-    author_email="info@gridatek.com",
+    author_email="hello@gridatek.com",
     description="An open-source tool that analyzes historical Spark job runs to recommend optimal resource configurations",
     long_description=long_description,
     long_description_content_type="text/markdown",
