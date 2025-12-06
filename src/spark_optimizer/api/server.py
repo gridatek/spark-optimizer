@@ -442,8 +442,11 @@ def get_stats():
 
 
 def run_server(
-    host="0.0.0.0", port=8080, debug=False, db_url: str = "sqlite:///spark_optimizer.db"
-):  # nosec B104
+    host="0.0.0.0",  # nosec B104
+    port=8080,
+    debug=False,
+    db_url: str = "sqlite:///spark_optimizer.db",
+):
     """Run the Flask server"""
     init_app(db_url=db_url)
     logger.info(f"Starting Spark Resource Optimizer API on {host}:{port}")
