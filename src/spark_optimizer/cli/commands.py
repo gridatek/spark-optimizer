@@ -447,5 +447,10 @@ def output_spark_submit(rec):
     click.echo("  your-application.jar")
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the CLI"""
     cli()
+
+
+if __name__ == "__main__":
+    main()
