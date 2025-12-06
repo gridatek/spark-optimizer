@@ -345,6 +345,29 @@ def stats(db_url: str):
                 click.echo(f"  {job_type}: {count}")
 
 
+@cli.command()
+@click.option(
+    "--host", default="0.0.0.0", help="Host to bind the server to"
+)  # nosec B104
+@click.option("--port", default=8080, type=int, help="Port to bind the server to")
+@click.option("--debug", is_flag=True, help="Enable debug mode")
+@click.option(
+    "--db-url",
+    default="sqlite:///spark_optimizer.db",
+    help="Database URL",
+    envvar="SPARK_OPTIMIZER_DB_URL",
+)
+def serve(host: str, port: int, debug: bool, db_url: str):
+    """Start the API server"""
+    from spark_optimizer.api.server import run_server
+
+    click.echo(f"Starting Spark Resource Optimizer API on {host}:{port}")
+    click.echo(f"Database: {db_url}")
+    click.echo(f"Debug mode: {'enabled' if debug else 'disabled'}")
+
+    run_server(host=host, port=port, debug=debug, db_url=db_url)
+
+
 def parse_size_string(size_str: str) -> Optional[int]:
     """Parse size string like '10GB' to bytes"""
     size_str = size_str.upper().strip()

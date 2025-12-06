@@ -89,7 +89,11 @@ jobs:
     - name: Start services with docker compose
       run: |
         docker compose up -d
-        sleep 30
+
+    - name: Wait for services to be healthy
+      run: |
+        echo "Waiting for API service to be healthy..."
+        timeout 60 sh -c 'until docker compose ps api | grep -q "healthy"; do echo "Waiting..."; sleep 2; done'
 
     - name: Check service health
       run: |
