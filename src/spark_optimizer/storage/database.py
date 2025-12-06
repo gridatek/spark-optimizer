@@ -57,7 +57,9 @@ class Database:
         from .models import SparkApplication
 
         # Convert memory strings to MB if needed
-        executor_memory_mb = self._parse_memory_to_mb(job_dict.get("executor_memory", "0"))
+        executor_memory_mb = self._parse_memory_to_mb(
+            job_dict.get("executor_memory", "0")
+        )
         driver_memory_mb = self._parse_memory_to_mb(job_dict.get("driver_memory", "0"))
 
         with self.get_session() as session:
@@ -109,9 +111,13 @@ class Database:
             rec = JobRecommendation(
                 job_signature=self._generate_job_signature(rec_dict),
                 recommended_executor_cores=rec_dict.get("recommended_executor_cores"),
-                recommended_executor_memory_mb=rec_dict.get("recommended_executor_memory_mb"),
+                recommended_executor_memory_mb=rec_dict.get(
+                    "recommended_executor_memory_mb"
+                ),
                 recommended_num_executors=rec_dict.get("recommended_executors"),
-                recommended_driver_memory_mb=rec_dict.get("recommended_driver_memory_mb"),
+                recommended_driver_memory_mb=rec_dict.get(
+                    "recommended_driver_memory_mb"
+                ),
                 predicted_duration_ms=rec_dict.get("predicted_duration_ms"),
                 predicted_cost=rec_dict.get("predicted_cost"),
                 confidence_score=rec_dict.get("confidence_score"),

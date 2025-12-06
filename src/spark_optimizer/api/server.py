@@ -311,7 +311,11 @@ def analyze_job(app_id: str):
                     )
 
             # Check for GC issues
-            if job.executor_run_time_ms and job.jvm_gc_time_ms and job.executor_run_time_ms > 0:
+            if (
+                job.executor_run_time_ms
+                and job.jvm_gc_time_ms
+                and job.executor_run_time_ms > 0
+            ):
                 gc_ratio = job.jvm_gc_time_ms / job.executor_run_time_ms
                 if gc_ratio > 0.1:
                     issues.append(
@@ -435,7 +439,9 @@ def get_stats():
         return jsonify({"error": str(e)}), 500
 
 
-def run_server(host="0.0.0.0", port=8080, debug=False, db_url: str = "sqlite:///spark_optimizer.db"):  # nosec B104
+def run_server(
+    host="0.0.0.0", port=8080, debug=False, db_url: str = "sqlite:///spark_optimizer.db"
+):  # nosec B104
     """Run the Flask server"""
     init_app(db_url=db_url)
     logger.info(f"Starting Spark Resource Optimizer API on {host}:{port}")
