@@ -160,11 +160,10 @@ def list_jobs(db_url: str, limit: int, job_type: Optional[str]):
     """List recent Spark jobs in the database"""
 
     db = Database(db_url)
-    session = db.get_session()
 
-    try:
-        from spark_optimizer.storage.models import SparkApplication
+    from spark_optimizer.storage.models import SparkApplication
 
+    with db.get_session() as session:
         query = session.query(SparkApplication)
 
         if job_type:
@@ -210,9 +209,6 @@ def list_jobs(db_url: str, limit: int, job_type: Optional[str]):
         click.echo(tabulate(table_data, headers=headers, tablefmt="grid"))
         click.echo(f"\nTotal jobs: {len(jobs)}")
 
-    finally:
-        session.close()
-
 
 @cli.command()
 @click.option("--app-id", required=True, help="Application ID to analyze")
@@ -221,11 +217,10 @@ def analyze(app_id: str, db_url: str):
     """Analyze a specific Spark job and provide optimization suggestions"""
 
     db = Database(db_url)
-    session = db.get_session()
 
-    try:
-        from spark_optimizer.storage.models import SparkApplication
+    from spark_optimizer.storage.models import SparkApplication
 
+    with db.get_session() as session:
         job = (
             session.query(SparkApplication)
             .filter(SparkApplication.app_id == app_id)
@@ -259,9 +254,9 @@ def analyze(app_id: str, db_url: str):
         issues_found = False
 
         # Check for spilling
-        if job.spill_disk_bytes > 0:
+        if job.disk_spilled_bytes and job.disk_spilled_bytes > 0:
             click.echo(
-                f"⚠ Disk spill detected: {job.spill_disk_bytes / (1024**3):.2f} GB"
+                f"⚠ Disk spill detected: {job.disk_spilled_bytes / (1024**3):.2f} GB"
             )
             click.echo(
                 "  → Consider increasing executor memory or reducing partition size\n"
@@ -269,20 +264,21 @@ def analyze(app_id: str, db_url: str):
             issues_found = True
 
         # Check for GC issues
-        gc_ratio = (
-            job.jvm_gc_time_ms / job.executor_run_time_ms
-            if job.executor_run_time_ms > 0
-            else 0
-        )
-        if gc_ratio > 0.1:
-            click.echo(f"⚠ High GC time: {gc_ratio*100:.1f}% of execution time")
-            click.echo(
-                "  → Consider increasing executor memory or reducing memory pressure\n"
+        if job.jvm_gc_time_ms and job.executor_run_time_ms:
+            gc_ratio = (
+                job.jvm_gc_time_ms / job.executor_run_time_ms
+                if job.executor_run_time_ms > 0
+                else 0
             )
-            issues_found = True
+            if gc_ratio > 0.1:
+                click.echo(f"⚠ High GC time: {gc_ratio*100:.1f}% of execution time")
+                click.echo(
+                    "  → Consider increasing executor memory or reducing memory pressure\n"
+                )
+                issues_found = True
 
         # Check for task failures
-        if job.failed_tasks > 0:
+        if job.failed_tasks and job.failed_tasks > 0:
             click.echo(f"⚠ Task failures: {job.failed_tasks} out of {job.total_tasks}")
             click.echo(
                 "  → Investigate failure causes and consider adjusting resources\n"
@@ -290,7 +286,7 @@ def analyze(app_id: str, db_url: str):
             issues_found = True
 
         # Check shuffle ratio
-        if job.input_bytes > 0:
+        if job.input_bytes and job.input_bytes > 0:
             shuffle_ratio = job.shuffle_write_bytes / job.input_bytes
             if shuffle_ratio > 0.5:
                 click.echo(f"⚠ High shuffle ratio: {shuffle_ratio*100:.1f}%")
@@ -302,9 +298,6 @@ def analyze(app_id: str, db_url: str):
         if not issues_found:
             click.echo("✓ No major issues detected. Job appears well-optimized.")
 
-    finally:
-        session.close()
-
 
 @cli.command()
 @click.option("--db-url", default="sqlite:///spark_optimizer.db", help="Database URL")
@@ -312,12 +305,11 @@ def stats(db_url: str):
     """Display statistics about collected data"""
 
     db = Database(db_url)
-    session = db.get_session()
 
-    try:
-        from spark_optimizer.storage.models import SparkApplication
-        from sqlalchemy import func
+    from spark_optimizer.storage.models import SparkApplication
+    from sqlalchemy import func
 
+    with db.get_session() as session:
         total_jobs = session.query(func.count(SparkApplication.id)).scalar()
 
         if total_jobs == 0:
@@ -351,9 +343,6 @@ def stats(db_url: str):
         for job_type, count in job_types:
             if job_type:
                 click.echo(f"  {job_type}: {count}")
-
-    finally:
-        session.close()
 
 
 def parse_size_string(size_str: str) -> Optional[int]:

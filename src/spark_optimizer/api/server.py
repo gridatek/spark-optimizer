@@ -22,8 +22,26 @@ CORS(app)  # Enable CORS for all routes
 
 # Initialize database and recommender - needs to be configured with connection string
 # This will be properly initialized when the app starts
-db = None  # type: ignore
-recommender = None  # type: ignore
+db: Optional[Database] = None
+recommender: Optional[SimilarityRecommender] = None
+
+
+def init_app(db_url: str = "sqlite:///spark_optimizer.db"):
+    """Initialize the application with database and recommender.
+
+    Args:
+        db_url: Database connection string
+    """
+    global db, recommender
+    db = Database(db_url)
+    db.create_tables()
+    recommender = SimilarityRecommender(db=db)
+
+
+def _ensure_initialized():
+    """Ensure database and recommender are initialized."""
+    if db is None or recommender is None:
+        raise RuntimeError("Application not initialized. Call init_app() first.")
 
 
 @app.route("/health", methods=["GET"])
@@ -49,6 +67,10 @@ def get_recommendation():
     }
     """
     try:
+        _ensure_initialized()
+        assert db is not None
+        assert recommender is not None
+
         data = request.get_json()
 
         # Validate required fields
@@ -129,14 +151,15 @@ def list_jobs():
     - max_duration: Maximum duration in seconds
     """
     try:
+        _ensure_initialized()
+        assert db is not None
+
         limit = request.args.get("limit", 20, type=int)
         job_type = request.args.get("job_type")
         min_duration = request.args.get("min_duration", type=int)
         max_duration = request.args.get("max_duration", type=int)
 
-        session = db.get_session()
-
-        try:
+        with db.get_session() as session:
             query = session.query(SparkApplication)
 
             if job_type:
@@ -181,9 +204,6 @@ def list_jobs():
 
             return jsonify({"jobs": jobs_list, "count": len(jobs_list)})
 
-        finally:
-            session.close()
-
     except Exception as e:
         logger.error(f"Error listing jobs: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -193,9 +213,10 @@ def list_jobs():
 def get_job(app_id: str):
     """Get details for a specific job"""
     try:
-        session = db.get_session()
+        _ensure_initialized()
+        assert db is not None
 
-        try:
+        with db.get_session() as session:
             job = (
                 session.query(SparkApplication)
                 .filter(SparkApplication.app_id == app_id)
@@ -210,14 +231,13 @@ def get_job(app_id: str):
                 "app_id": job.app_id,
                 "app_name": job.app_name,
                 "user": job.user,
-                "start_time": job.start_time.isoformat(),
+                "start_time": job.start_time.isoformat() if job.start_time else None,
                 "end_time": job.end_time.isoformat() if job.end_time else None,
                 "duration_ms": job.duration_ms,
                 "resource_config": {
                     "num_executors": job.num_executors,
                     "executor_cores": job.executor_cores,
                     "executor_memory_mb": job.executor_memory_mb,
-                    "driver_cores": job.driver_cores,
                     "driver_memory_mb": job.driver_memory_mb,
                 },
                 "metrics": {
@@ -229,8 +249,8 @@ def get_job(app_id: str):
                     "shuffle_read_bytes": job.shuffle_read_bytes,
                     "shuffle_write_bytes": job.shuffle_write_bytes,
                     "peak_memory_usage": job.peak_memory_usage,
-                    "spill_disk_bytes": job.spill_disk_bytes,
-                    "spill_memory_bytes": job.spill_memory_bytes,
+                    "disk_spilled_bytes": job.disk_spilled_bytes,
+                    "memory_spilled_bytes": job.memory_spilled_bytes,
                     "executor_run_time_ms": job.executor_run_time_ms,
                     "executor_cpu_time_ms": job.executor_cpu_time_ms,
                     "jvm_gc_time_ms": job.jvm_gc_time_ms,
@@ -246,9 +266,6 @@ def get_job(app_id: str):
 
             return jsonify(job_dict)
 
-        finally:
-            session.close()
-
     except Exception as e:
         logger.error(f"Error getting job: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -258,9 +275,10 @@ def get_job(app_id: str):
 def analyze_job(app_id: str):
     """Analyze a job and provide optimization suggestions"""
     try:
-        session = db.get_session()
+        _ensure_initialized()
+        assert db is not None
 
-        try:
+        with db.get_session() as session:
             job = (
                 session.query(SparkApplication)
                 .filter(SparkApplication.app_id == app_id)
@@ -274,25 +292,26 @@ def analyze_job(app_id: str):
             suggestions = []
 
             # Check for spilling
-            if job.spill_disk_bytes > 0:
+            if job.disk_spilled_bytes and job.disk_spilled_bytes > 0:
                 issues.append(
                     {
                         "type": "disk_spill",
                         "severity": "high",
-                        "description": f"Disk spill detected: {job.spill_disk_bytes / (1024**3):.2f} GB",
+                        "description": f"Disk spill detected: {job.disk_spilled_bytes / (1024**3):.2f} GB",
                         "impact": "Significant performance degradation",
                     }
                 )
-                suggestions.append(
-                    {
-                        "type": "increase_memory",
-                        "description": "Consider increasing executor memory",
-                        "recommendation": f"Try {int(job.executor_memory_mb * 1.5)} MB per executor",
-                    }
-                )
+                if job.executor_memory_mb:
+                    suggestions.append(
+                        {
+                            "type": "increase_memory",
+                            "description": "Consider increasing executor memory",
+                            "recommendation": f"Try {int(job.executor_memory_mb * 1.5)} MB per executor",
+                        }
+                    )
 
             # Check for GC issues
-            if job.executor_run_time_ms > 0:
+            if job.executor_run_time_ms and job.jvm_gc_time_ms and job.executor_run_time_ms > 0:
                 gc_ratio = job.jvm_gc_time_ms / job.executor_run_time_ms
                 if gc_ratio > 0.1:
                     issues.append(
@@ -312,7 +331,7 @@ def analyze_job(app_id: str):
                     )
 
             # Check for task failures
-            if job.failed_tasks > 0:
+            if job.failed_tasks and job.total_tasks and job.failed_tasks > 0:
                 failure_rate = job.failed_tasks / job.total_tasks
                 severity = "high" if failure_rate > 0.1 else "medium"
                 issues.append(
@@ -325,7 +344,7 @@ def analyze_job(app_id: str):
                 )
 
             # Check shuffle ratio
-            if job.input_bytes > 0:
+            if job.input_bytes and job.shuffle_write_bytes and job.input_bytes > 0:
                 shuffle_ratio = job.shuffle_write_bytes / job.input_bytes
                 if shuffle_ratio > 0.5:
                     issues.append(
@@ -370,9 +389,6 @@ def analyze_job(app_id: str):
                 }
             )
 
-        finally:
-            session.close()
-
     except Exception as e:
         logger.error(f"Error analyzing job: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -382,11 +398,12 @@ def analyze_job(app_id: str):
 def get_stats():
     """Get aggregate statistics"""
     try:
+        _ensure_initialized()
+        assert db is not None
+
         from sqlalchemy import func
 
-        session = db.get_session()
-
-        try:
+        with db.get_session() as session:
             total_jobs = session.query(func.count(SparkApplication.id)).scalar()
             avg_duration = session.query(
                 func.avg(SparkApplication.duration_ms)
@@ -413,16 +430,14 @@ def get_stats():
                 }
             )
 
-        finally:
-            session.close()
-
     except Exception as e:
         logger.error(f"Error getting stats: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
-def run_server(host="0.0.0.0", port=8080, debug=False):  # nosec B104
+def run_server(host="0.0.0.0", port=8080, debug=False, db_url: str = "sqlite:///spark_optimizer.db"):  # nosec B104
     """Run the Flask server"""
+    init_app(db_url=db_url)
     logger.info(f"Starting Spark Resource Optimizer API on {host}:{port}")
     app.run(host=host, port=port, debug=debug)
 

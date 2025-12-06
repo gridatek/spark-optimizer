@@ -16,11 +16,22 @@ class RuleBasedRecommender(BaseRecommender):
         super().__init__(config)
         self.rules = self._initialize_rules()
 
-    def recommend(self, job_requirements: Dict) -> Dict:
+    def recommend(
+        self,
+        input_size_bytes: int,
+        job_type: Optional[str] = None,
+        sla_minutes: Optional[int] = None,
+        budget_dollars: Optional[float] = None,
+        priority: str = "balanced",
+    ) -> Dict:
         """Generate rule-based recommendations.
 
         Args:
-            job_requirements: Job requirements dictionary
+            input_size_bytes: Expected input data size in bytes
+            job_type: Type of job (e.g., etl, ml, streaming)
+            sla_minutes: Maximum acceptable duration in minutes
+            budget_dollars: Maximum acceptable cost in dollars
+            priority: Optimization priority (performance, cost, or balanced)
 
         Returns:
             Recommendation dictionary
@@ -31,8 +42,8 @@ class RuleBasedRecommender(BaseRecommender):
         # 3. Apply anti-pattern detection
         # 4. Combine rules with weights
 
-        input_gb = job_requirements.get("input_size_gb", 10)
-        job_type = job_requirements.get("job_type", "general")
+        input_gb = input_size_bytes / (1024**3)
+        job_type = job_type or "general"
 
         # Apply size-based rules
         size_rec = self._apply_size_rules(input_gb)

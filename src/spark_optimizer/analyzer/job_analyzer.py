@@ -65,7 +65,7 @@ class JobAnalyzer:
         # - Check for CPU-bound operations
         # - Check for memory pressure
         # - Check for I/O wait times
-        bottlenecks: List[Dict] = []
+        bottlenecks: List[str] = []
         return bottlenecks
 
     def _detect_issues(self, job_data: Dict) -> List[Dict]:
