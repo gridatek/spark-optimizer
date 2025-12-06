@@ -170,4 +170,6 @@ class Database:
         }
 
         signature_str = json.dumps(signature_data, sort_keys=True)
-        return hashlib.md5(signature_str.encode()).hexdigest()
+        return hashlib.md5(
+            signature_str.encode(), usedforsecurity=False
+        ).hexdigest()  # nosec B324

@@ -38,10 +38,18 @@ def init_app(db_url: str = "sqlite:///spark_optimizer.db"):
     recommender = SimilarityRecommender(db=db)
 
 
-def _ensure_initialized():
-    """Ensure database and recommender are initialized."""
+def _ensure_initialized() -> tuple[Database, SimilarityRecommender]:
+    """Ensure database and recommender are initialized.
+
+    Returns:
+        Tuple of (db, recommender) for type checking
+
+    Raises:
+        RuntimeError: If application is not initialized
+    """
     if db is None or recommender is None:
         raise RuntimeError("Application not initialized. Call init_app() first.")
+    return (db, recommender)
 
 
 @app.route("/health", methods=["GET"])
@@ -67,9 +75,7 @@ def get_recommendation():
     }
     """
     try:
-        _ensure_initialized()
-        assert db is not None
-        assert recommender is not None
+        db, recommender = _ensure_initialized()
 
         data = request.get_json()
 
@@ -151,8 +157,7 @@ def list_jobs():
     - max_duration: Maximum duration in seconds
     """
     try:
-        _ensure_initialized()
-        assert db is not None
+        db, _ = _ensure_initialized()
 
         limit = request.args.get("limit", 20, type=int)
         job_type = request.args.get("job_type")
@@ -213,8 +218,7 @@ def list_jobs():
 def get_job(app_id: str):
     """Get details for a specific job"""
     try:
-        _ensure_initialized()
-        assert db is not None
+        db, _ = _ensure_initialized()
 
         with db.get_session() as session:
             job = (
@@ -275,8 +279,7 @@ def get_job(app_id: str):
 def analyze_job(app_id: str):
     """Analyze a job and provide optimization suggestions"""
     try:
-        _ensure_initialized()
-        assert db is not None
+        db, _ = _ensure_initialized()
 
         with db.get_session() as session:
             job = (
@@ -402,8 +405,7 @@ def analyze_job(app_id: str):
 def get_stats():
     """Get aggregate statistics"""
     try:
-        _ensure_initialized()
-        assert db is not None
+        db, _ = _ensure_initialized()
 
         from sqlalchemy import func
 
