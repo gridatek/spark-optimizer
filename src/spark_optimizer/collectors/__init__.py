@@ -29,4 +29,12 @@ try:
 except ImportError:
     pass
 
+# Try to import Dataproc collector (requires google-cloud-dataproc)
+try:
+    from .dataproc_collector import DataprocCollector
+
+    collectors.append("DataprocCollector")
+except ImportError:
+    pass
+
 __all__ = collectors
