@@ -421,9 +421,11 @@ def collect_from_history_server():
             for job in job_data:
                 try:
                     # Check if job already exists
-                    existing = session.query(SparkApplication).filter(
-                        SparkApplication.app_id == job["app_id"]
-                    ).first()
+                    existing = (
+                        session.query(SparkApplication)
+                        .filter(SparkApplication.app_id == job["app_id"])
+                        .first()
+                    )
 
                     if existing:
                         logger.debug(f"Skipping existing job: {job['app_id']}")
@@ -436,21 +438,27 @@ def collect_from_history_server():
                     collected += 1
 
                 except Exception as e:
-                    logger.error(f"Error storing job {job.get('app_id', 'unknown')}: {e}")
+                    logger.error(
+                        f"Error storing job {job.get('app_id', 'unknown')}: {e}"
+                    )
                     failed += 1
                     continue
 
             session.commit()
 
-        logger.info(f"Collection complete: {collected} collected, {failed} failed, {skipped} skipped")
+        logger.info(
+            f"Collection complete: {collected} collected, {failed} failed, {skipped} skipped"
+        )
 
-        return jsonify({
-            "success": True,
-            "collected": collected,
-            "failed": failed,
-            "skipped": skipped,
-            "message": f"Successfully collected {collected} jobs from History Server"
-        })
+        return jsonify(
+            {
+                "success": True,
+                "collected": collected,
+                "failed": failed,
+                "skipped": skipped,
+                "message": f"Successfully collected {collected} jobs from History Server",
+            }
+        )
 
     except Exception as e:
         logger.error(f"Error collecting from History Server: {e}", exc_info=True)

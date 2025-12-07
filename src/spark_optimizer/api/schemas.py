@@ -7,11 +7,21 @@ from pydantic import BaseModel, Field, validator, HttpUrl
 class RecommendationRequest(BaseModel):
     """Request schema for /api/v1/recommend endpoint."""
 
-    input_size_bytes: int = Field(..., gt=0, description="Expected input data size in bytes")
-    job_type: Optional[str] = Field(None, description="Type of job (etl, ml, streaming)")
-    sla_minutes: Optional[int] = Field(None, gt=0, description="Maximum acceptable duration in minutes")
-    budget_dollars: Optional[float] = Field(None, gt=0, description="Maximum acceptable cost in dollars")
-    priority: str = Field("balanced", description="Optimization priority (performance, cost, or balanced)")
+    input_size_bytes: int = Field(
+        ..., gt=0, description="Expected input data size in bytes"
+    )
+    job_type: Optional[str] = Field(
+        None, description="Type of job (etl, ml, streaming)"
+    )
+    sla_minutes: Optional[int] = Field(
+        None, gt=0, description="Maximum acceptable duration in minutes"
+    )
+    budget_dollars: Optional[float] = Field(
+        None, gt=0, description="Maximum acceptable cost in dollars"
+    )
+    priority: str = Field(
+        "balanced", description="Optimization priority (performance, cost, or balanced)"
+    )
 
     @validator("priority")
     def validate_priority(cls, v):
@@ -23,8 +33,16 @@ class RecommendationRequest(BaseModel):
     @validator("job_type")
     def validate_job_type(cls, v):
         """Validate job_type value."""
-        if v is not None and v not in ["etl", "ml", "streaming", "batch", "interactive"]:
-            raise ValueError("job_type must be one of: etl, ml, streaming, batch, interactive")
+        if v is not None and v not in [
+            "etl",
+            "ml",
+            "streaming",
+            "batch",
+            "interactive",
+        ]:
+            raise ValueError(
+                "job_type must be one of: etl, ml, streaming, batch, interactive"
+            )
         return v
 
 
@@ -44,7 +62,9 @@ class RecommendationMetadata(BaseModel):
     job_type: str = Field(..., description="Type of job")
     priority: str = Field(..., description="Optimization priority")
     rules_applied: Optional[int] = Field(None, description="Number of rules applied")
-    optimization_hints: Optional[List[Dict[str, Any]]] = Field(None, description="Optimization hints")
+    optimization_hints: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Optimization hints"
+    )
 
 
 class RecommendationResponse(BaseModel):
@@ -59,9 +79,13 @@ class CollectRequest(BaseModel):
     """Request schema for /api/v1/collect endpoint."""
 
     history_server_url: str = Field(..., description="URL of the Spark History Server")
-    max_apps: int = Field(100, gt=0, le=1000, description="Maximum number of applications to fetch")
+    max_apps: int = Field(
+        100, gt=0, le=1000, description="Maximum number of applications to fetch"
+    )
     status: str = Field("completed", description="Application status filter")
-    min_date: Optional[str] = Field(None, description="Minimum date for applications (ISO format)")
+    min_date: Optional[str] = Field(
+        None, description="Minimum date for applications (ISO format)"
+    )
 
     @validator("history_server_url")
     def validate_url(cls, v):
@@ -91,8 +115,12 @@ class CollectResponse(BaseModel):
 class CompareRequest(BaseModel):
     """Request schema for /api/v1/compare endpoint."""
 
-    app_ids: List[str] = Field(..., min_items=2, max_items=10, description="List of application IDs to compare")
-    metrics: Optional[List[str]] = Field(None, description="Specific metrics to compare (all if not specified)")
+    app_ids: List[str] = Field(
+        ..., min_items=2, max_items=10, description="List of application IDs to compare"
+    )
+    metrics: Optional[List[str]] = Field(
+        None, description="Specific metrics to compare (all if not specified)"
+    )
 
     @validator("app_ids")
     def validate_app_ids(cls, v):
