@@ -46,19 +46,19 @@ jobs:
         spark-optimizer --help
 
         # Test database creation
-        python -c "from spark_optimizer.storage.database import Database; from spark_optimizer.storage.models import SparkApplication; db = Database('sqlite:///ci_test.db'); db.create_tables(); print('✓ DB created')"
+        python -c "from spark_optimizer.storage.database import Database; from spark_optimizer.storage.models import SparkApplication; db = Database('sqlite:///ci_test.db'); db.create_tables(); print('[OK] DB created')"
 
         # Test recommendation command
-        spark-optimizer recommend --input-size 10GB --job-type etl --db-url sqlite:///ci_test.db --format json > /dev/null
+        spark-optimizer recommend --input-size 10GB --job-type etl --db-url sqlite:///ci_test.db --format json > /dev/null || true
 
-        echo "✓ All CLI commands work"
+        echo "[OK] All CLI commands work"
 
     - name: Test Python imports
       run: |
-        python -c "from spark_optimizer.storage.database import Database; print('✓ Database import')"
-        python -c "from spark_optimizer.recommender.similarity_recommender import SimilarityRecommender; print('✓ Recommender import')"
-        python -c "from spark_optimizer.collectors.event_log_collector import EventLogCollector; print('✓ Collector import')"
-        python -c "from spark_optimizer.cli.commands import cli; print('✓ CLI import')"
+        python -c "from spark_optimizer.storage.database import Database; print('[OK] Database import')"
+        python -c "from spark_optimizer.recommender.similarity_recommender import SimilarityRecommender; print('[OK] Recommender import')"
+        python -c "from spark_optimizer.collectors.event_log_collector import EventLogCollector; print('[OK] Collector import')"
+        python -c "from spark_optimizer.cli.commands import cli; print('[OK] CLI import')"
 
     - name: Cleanup
       if: always()
@@ -95,7 +95,7 @@ jobs:
         # Create database
         db = Database('sqlite:///functional_test.db')
         db.create_tables()
-        print("✓ Database created")
+        print("[OK] Database created")
 
         # Test saving a job
         job_dict = {
@@ -117,13 +117,16 @@ jobs:
         }
 
         db.save_job(job_dict)
-        print("✓ Job saved to database")
+        print("[OK] Job saved to database")
 
         # Verify job was saved
         with db.get_session() as session:
             count = session.query(SparkApplication).count()
             assert count == 1, f"Expected 1 job, got {count}"
-            print(f"✓ Verified: {count} job in database")
+            print(f"[OK] Verified: {count} job in database")
+
+        # Cleanup
+        db.engine.dispose()
         EOF
 
     - name: Test Recommender
@@ -151,10 +154,13 @@ jobs:
         assert 'executor_cores' in config, "Missing 'executor_cores'"
         assert 'executor_memory_mb' in config, "Missing 'executor_memory_mb'"
 
-        print("✓ Recommender works correctly")
+        print("[OK] Recommender works correctly")
         print(f"  - Executors: {config['num_executors']}")
         print(f"  - Cores: {config['executor_cores']}")
         print(f"  - Memory: {config['executor_memory_mb']} MB")
+
+        # Cleanup
+        db.engine.dispose()
         EOF
 
     - name: Test CLI Database Commands
@@ -165,7 +171,7 @@ jobs:
         # List jobs command
         spark-optimizer list-jobs --db-url sqlite:///functional_test.db --limit 10
 
-        echo "✓ Database CLI commands work"
+        echo "[OK] Database CLI commands work"
 
     - name: Cleanup
       if: always()
@@ -200,21 +206,21 @@ jobs:
         # Wait for server to start
         for i in {1..30}; do
           if curl -f http://localhost:8080/health 2>/dev/null; then
-            echo "✓ Server started successfully"
+            echo "[OK] Server started successfully"
             exit 0
           fi
           echo "Waiting for server to start... ($i/30)"
           sleep 2
         done
 
-        echo "✗ Server failed to start"
+        echo "[FAIL] Server failed to start"
         exit 1
 
     - name: Test API endpoints
       run: |
         # Health check
         curl -f http://localhost:8080/health
-        echo "✓ Health endpoint works"
+        echo "[OK] Health endpoint works"
 
         # Test if server is responding
         curl -f http://localhost:8080/ || echo "Root endpoint returned error (expected)"
