@@ -12,11 +12,11 @@ This document describes the CI/CD pipelines configured for the Spark Resource Op
 - Pull requests to `main`
 
 **Jobs**:
-- **smoke-test**: Tests basic functionality across multiple OS and Python versions
+- **smoke-test**: Tests basic functionality across multiple OS with latest Python
   - Runs the automated smoke test script
   - Tests CLI commands
   - Validates Python imports
-  - Matrix: Ubuntu/macOS/Windows × Python 3.9-3.13
+  - Matrix: Ubuntu/macOS/Windows × Python 3.13
 
 - **functional-test**: Tests actual functionality
   - Database operations (create, save, query)
@@ -84,7 +84,7 @@ This document describes the CI/CD pipelines configured for the Spark Resource Op
 - Recommender basic functionality (fallback mode)
 - API server startup
 - Multi-platform compatibility (Linux/macOS/Windows)
-- Multi-version Python support (3.9-3.13)
+- Latest Python version (3.13)
 
 ### ⚠️ Tested but Incomplete
 - Unit tests (most are stubs)
