@@ -5,21 +5,28 @@ from .history_server_collector import HistoryServerCollector
 from .event_log_collector import EventLogCollector
 from .metrics_collector import MetricsCollector
 
+# Cloud provider collectors (optional dependencies)
+collectors = [
+    "BaseCollector",
+    "HistoryServerCollector",
+    "EventLogCollector",
+    "MetricsCollector",
+]
+
+# Try to import EMR collector (requires boto3)
 try:
     from .emr_collector import EMRCollector
 
-    __all__ = [
-        "BaseCollector",
-        "HistoryServerCollector",
-        "EventLogCollector",
-        "MetricsCollector",
-        "EMRCollector",
-    ]
+    collectors.append("EMRCollector")
 except ImportError:
-    # boto3 not installed, EMR collector not available
-    __all__ = [
-        "BaseCollector",
-        "HistoryServerCollector",
-        "EventLogCollector",
-        "MetricsCollector",
-    ]
+    pass
+
+# Try to import Databricks collector (requires requests)
+try:
+    from .databricks_collector import DatabricksCollector
+
+    collectors.append("DatabricksCollector")
+except ImportError:
+    pass
+
+__all__ = collectors
