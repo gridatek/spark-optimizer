@@ -106,7 +106,9 @@ class EMRCollector(BaseCollector):
         self.cloudwatch_client = boto3.client(
             "cloudwatch", region_name=region_name, **aws_credentials
         )
-        self.ce_client = boto3.client("ce", region_name="us-east-1", **aws_credentials)
+        self.ce_client = boto3.client(
+            "ce", region_name="us-east-1", **aws_credentials
+        )
 
         # Configuration
         self.cluster_ids = self.config.get("cluster_ids", [])
@@ -337,10 +339,10 @@ class EMRCollector(BaseCollector):
         """
         # Extract instance configuration
         instance_groups = cluster_details.get("InstanceGroups", [])
-        core_instances = next(
+        core_instances: Dict = next(
             (ig for ig in instance_groups if ig["InstanceGroupType"] == "CORE"), {}
         )
-        master_instance = next(
+        master_instance: Dict = next(
             (ig for ig in instance_groups if ig["InstanceGroupType"] == "MASTER"), {}
         )
 
@@ -354,12 +356,15 @@ class EMRCollector(BaseCollector):
 
         # Calculate executor configuration
         executor_cores = instance_specs["vcpu"]
-        executor_memory_mb = int(instance_specs["memory_gb"] * 1024 * 0.9)  # 90% for executor
+        # 90% of memory for executor
+        executor_memory_mb = int(instance_specs["memory_gb"] * 1024 * 0.9)
         num_executors = instance_count
 
         # Extract timing information
-        start_time = step.get("Status", {}).get("Timeline", {}).get("CreationDateTime")
-        end_time = step.get("Status", {}).get("Timeline", {}).get("EndDateTime")
+        status = step.get("Status", {})
+        timeline = status.get("Timeline", {})
+        start_time = timeline.get("CreationDateTime")
+        end_time = timeline.get("EndDateTime")
 
         if not start_time:
             return None
@@ -469,8 +474,10 @@ class EMRCollector(BaseCollector):
         """
         try:
             # Get cluster runtime
-            start_time = cluster_details.get("Status", {}).get("Timeline", {}).get("CreationDateTime")
-            end_time = cluster_details.get("Status", {}).get("Timeline", {}).get("EndDateTime")
+            status = cluster_details.get("Status", {})
+            timeline = status.get("Timeline", {})
+            start_time = timeline.get("CreationDateTime")
+            end_time = timeline.get("EndDateTime")
 
             if not start_time:
                 return 0.0
