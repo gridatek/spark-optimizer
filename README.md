@@ -36,8 +36,9 @@ cd spark-resource-optimizer
 # Install dependencies
 pip install -e .
 
-# Optional: Install with AWS support
-pip install -e ".[aws]"
+# Optional: Install with cloud provider support
+pip install -e ".[aws]"          # For AWS EMR integration
+pip install -e ".[databricks]"   # For Databricks integration
 
 # Setup database
 python scripts/setup_db.py
@@ -52,9 +53,13 @@ spark-optimizer collect --event-log-dir /path/to/spark/logs
 # Collect data from Spark History Server
 spark-optimizer collect-from-history-server --history-server-url http://localhost:18080
 
-# Collect data from AWS EMR (requires boto3)
+# Collect data from AWS EMR
 pip install spark-resource-optimizer[aws]
 spark-optimizer collect-from-emr --region us-west-2
+
+# Collect data from Databricks
+pip install spark-resource-optimizer[databricks]
+spark-optimizer collect-from-databricks --workspace-url https://dbc-xxx.cloud.databricks.com
 
 # Get recommendations for a new job
 spark-optimizer recommend --input-size 10GB --job-type etl
@@ -93,7 +98,8 @@ spark-resource-optimizer/
 │   ├── data-collection.md
 │   ├── recommendation-engine.md
 │   ├── api-reference.md
-│   └── AWS_EMR_INTEGRATION.md
+│   ├── AWS_EMR_INTEGRATION.md
+│   └── DATABRICKS_INTEGRATION.md
 ├── src/
 │   └── spark_optimizer/
 │       ├── __init__.py
@@ -156,9 +162,9 @@ If you use this tool in your research or production systems, please cite:
 - [x] Basic event log parsing
 - [x] SQLite storage backend
 - [x] Similarity-based recommendations
-- [ ] Integration with Spark History Server
+- [x] Integration with Spark History Server
+- [x] Cloud provider integrations (AWS EMR, Databricks)
 - [ ] ML-based prediction models
-- [ ] Cloud provider integrations (AWS EMR, Databricks)
 - [ ] Web UI dashboard
 - [ ] Real-time monitoring and alerts
 - [ ] Auto-tuning capabilities

@@ -42,6 +42,9 @@ setup(
         "aws": [
             "boto3>=1.26.0",
         ],
+        "databricks": [
+            "requests>=2.28.0",
+        ],
     },
     entry_points={
         "console_scripts": [
