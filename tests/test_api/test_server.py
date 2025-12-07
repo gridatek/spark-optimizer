@@ -69,13 +69,13 @@ class TestRecommendEndpoint:
         request_data = {
             "input_size_bytes": 10 * 1024**3,
             "job_type": "etl",
-            "priority": "balanced"
+            "priority": "balanced",
         }
 
         response = client.post(
             "/api/v1/recommend",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         assert response.status_code == 200
@@ -93,15 +93,12 @@ class TestRecommendEndpoint:
 
     def test_recommend_missing_input_size(self, client):
         """Test recommendation request without input_size_bytes."""
-        request_data = {
-            "job_type": "etl",
-            "priority": "balanced"
-        }
+        request_data = {"job_type": "etl", "priority": "balanced"}
 
         response = client.post(
             "/api/v1/recommend",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         assert response.status_code == 400
@@ -112,13 +109,13 @@ class TestRecommendEndpoint:
         """Test recommendation request with invalid priority."""
         request_data = {
             "input_size_bytes": 10 * 1024**3,
-            "priority": "super_fast"  # Invalid priority
+            "priority": "super_fast",  # Invalid priority
         }
 
         response = client.post(
             "/api/v1/recommend",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         # Should still work but default to balanced
@@ -132,7 +129,7 @@ class TestRecommendEndpoint:
             request_data = {
                 "input_size_bytes": 10 * 1024**3,
                 "job_type": job_type,
-                "priority": "balanced"
+                "priority": "balanced",
             }
 
             response = client.post(
@@ -202,7 +199,9 @@ class TestAnalyzeEndpoint:
         mock_job.shuffle_write_bytes = 0
         mock_job.output_bytes = 0
 
-        mock_session.query.return_value.filter.return_value.first.return_value = mock_job
+        mock_session.query.return_value.filter.return_value.first.return_value = (
+            mock_job
+        )
 
         # Mock recommender analysis
         mock_recommender.analyze_job.return_value = {
@@ -213,22 +212,22 @@ class TestAnalyzeEndpoint:
                 "critical": 0,
                 "warnings": 0,
                 "info": 0,
-                "health_score": 100.0
+                "health_score": 100.0,
             },
             "current_configuration": {
                 "num_executors": 10,
                 "executor_cores": 4,
                 "executor_memory_mb": 8192,
-                "driver_memory_mb": 4096
+                "driver_memory_mb": 4096,
             },
             "recommended_configuration": {
                 "num_executors": 10,
                 "executor_cores": 4,
                 "executor_memory_mb": 8192,
-                "driver_memory_mb": 4096
+                "driver_memory_mb": 4096,
             },
             "spark_configs": {},
-            "recommendations": []
+            "recommendations": [],
         }
 
         response = client.get("/api/v1/jobs/app-test-123/analyze")
@@ -255,14 +254,12 @@ class TestCollectEndpoint:
 
     def test_collect_missing_url(self, client):
         """Test collect request without history_server_url."""
-        request_data = {
-            "max_apps": 100
-        }
+        request_data = {"max_apps": 100}
 
         response = client.post(
             "/api/v1/collect",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         assert response.status_code == 400
@@ -278,14 +275,12 @@ class TestCollectEndpoint:
         mock_collector.validate_config.return_value = False
         mock_collector_class.return_value = mock_collector
 
-        request_data = {
-            "history_server_url": "http://localhost:18080"
-        }
+        request_data = {"history_server_url": "http://localhost:18080"}
 
         response = client.post(
             "/api/v1/collect",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         assert response.status_code == 503
@@ -294,7 +289,9 @@ class TestCollectEndpoint:
 
     @patch("spark_optimizer.api.server.HistoryServerCollector")
     @patch("spark_optimizer.api.server.db")
-    def test_collect_success(self, mock_db, mock_collector_class, client, sample_job_data):
+    def test_collect_success(
+        self, mock_db, mock_collector_class, client, sample_job_data
+    ):
         """Test successful job collection."""
         # Mock collector
         mock_collector = Mock()
@@ -305,17 +302,16 @@ class TestCollectEndpoint:
         # Mock database session
         mock_session = MagicMock()
         mock_db.get_session.return_value.__enter__.return_value = mock_session
-        mock_session.query.return_value.filter.return_value.first.return_value = None  # No existing job
+        mock_session.query.return_value.filter.return_value.first.return_value = (
+            None  # No existing job
+        )
 
-        request_data = {
-            "history_server_url": "http://localhost:18080",
-            "max_apps": 10
-        }
+        request_data = {"history_server_url": "http://localhost:18080", "max_apps": 10}
 
         response = client.post(
             "/api/v1/collect",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         assert response.status_code == 200
@@ -336,7 +332,7 @@ class TestCompareEndpoint:
         response = client.post(
             "/api/v1/compare",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         assert response.status_code == 400
@@ -345,14 +341,12 @@ class TestCompareEndpoint:
 
     def test_compare_too_few_jobs(self, client):
         """Test compare with less than 2 jobs."""
-        request_data = {
-            "app_ids": ["app-1"]
-        }
+        request_data = {"app_ids": ["app-1"]}
 
         response = client.post(
             "/api/v1/compare",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         assert response.status_code == 400
@@ -362,14 +356,12 @@ class TestCompareEndpoint:
 
     def test_compare_too_many_jobs(self, client):
         """Test compare with more than 10 jobs."""
-        request_data = {
-            "app_ids": [f"app-{i}" for i in range(15)]
-        }
+        request_data = {"app_ids": [f"app-{i}" for i in range(15)]}
 
         response = client.post(
             "/api/v1/compare",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         assert response.status_code == 400
@@ -379,14 +371,12 @@ class TestCompareEndpoint:
 
     def test_compare_jobs_not_found(self, client):
         """Test compare with non-existent jobs."""
-        request_data = {
-            "app_ids": ["nonexistent-1", "nonexistent-2"]
-        }
+        request_data = {"app_ids": ["nonexistent-1", "nonexistent-2"]}
 
         response = client.post(
             "/api/v1/compare",
             data=json.dumps(request_data),
-            content_type="application/json"
+            content_type="application/json",
         )
 
         assert response.status_code == 404
