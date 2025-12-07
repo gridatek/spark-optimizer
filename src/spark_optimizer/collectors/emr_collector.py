@@ -106,9 +106,7 @@ class EMRCollector(BaseCollector):
         self.cloudwatch_client = boto3.client(
             "cloudwatch", region_name=region_name, **aws_credentials
         )
-        self.ce_client = boto3.client(
-            "ce", region_name="us-east-1", **aws_credentials
-        )
+        self.ce_client = boto3.client("ce", region_name="us-east-1", **aws_credentials)
 
         # Configuration
         self.cluster_ids = self.config.get("cluster_ids", [])
@@ -150,9 +148,7 @@ class EMRCollector(BaseCollector):
 
                 # Add cost data if enabled
                 if self.collect_costs and applications:
-                    cluster_cost = self._fetch_cluster_cost(
-                        cluster_id, cluster_details
-                    )
+                    cluster_cost = self._fetch_cluster_cost(cluster_id, cluster_details)
                     # Distribute cost across applications proportionally
                     for app in applications:
                         app["estimated_cost"] = cluster_cost / len(applications)
@@ -282,9 +278,7 @@ class EMRCollector(BaseCollector):
         response = self.emr_client.describe_cluster(ClusterId=cluster_id)
         return response["Cluster"]
 
-    def _fetch_applications(
-        self, cluster_id: str, cluster_details: Dict
-    ) -> List[Dict]:
+    def _fetch_applications(self, cluster_id: str, cluster_details: Dict) -> List[Dict]:
         """Fetch Spark applications from an EMR cluster.
 
         This attempts to get application data from EMR steps.
@@ -436,9 +430,9 @@ class EMRCollector(BaseCollector):
             )
 
             if cpu_response.get("Datapoints"):
-                avg_cpu = sum(
-                    dp["Average"] for dp in cpu_response["Datapoints"]
-                ) / len(cpu_response["Datapoints"])
+                avg_cpu = sum(dp["Average"] for dp in cpu_response["Datapoints"]) / len(
+                    cpu_response["Datapoints"]
+                )
                 metrics["avg_cpu_utilization"] = avg_cpu
 
             # Memory utilization
