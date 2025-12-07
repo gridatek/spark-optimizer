@@ -157,7 +157,7 @@
           <strong>Method:</strong> {{ recommendation.method | titlecase }}
         </div>
         <div *ngIf="recommendation.metadata?.similar_jobs" class="metadata-item">
-          <strong>Based on:</strong> {{ recommendation.metadata.similar_jobs.length }} similar jobs
+          <strong>Based on:</strong> {{ recommendation.metadata?.similar_jobs?.length }} similar jobs
         </div>
       </div>
 
