@@ -429,6 +429,214 @@ def collect_from_history_server():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/v1/compare", methods=["POST"])
+def compare_jobs():
+    """Compare multiple Spark jobs to identify patterns and differences
+
+    Request body:
+    {
+        "app_ids": ["app-1", "app-2", "app-3"],
+        "metrics": ["duration_ms", "executor_memory_mb", ...]  // optional, all metrics if not specified
+    }
+
+    Returns:
+    {
+        "jobs": [
+            {"app_id": "app-1", "app_name": "...", "duration_ms": 100000, ...},
+            {"app_id": "app-2", "app_name": "...", "duration_ms": 150000, ...}
+        ],
+        "summary": {
+            "fastest": {"app_id": "app-1", "duration_ms": 100000},
+            "slowest": {"app_id": "app-2", "duration_ms": 150000},
+            "most_efficient": {"app_id": "app-1", "efficiency_ratio": 0.85},
+            "least_efficient": {"app_id": "app-2", "efficiency_ratio": 0.42}
+        },
+        "recommendations": [
+            {
+                "metric": "executor_memory_mb",
+                "observation": "app-1 uses 50% less memory but runs 33% faster",
+                "recommendation": "Consider reducing executor memory for better cost-efficiency"
+            }
+        ]
+    }
+    """
+    try:
+        db, _, rb_recommender = _ensure_initialized()
+
+        data = request.get_json()
+
+        # Validate required fields
+        if not data or "app_ids" not in data:
+            return jsonify({
+                "error": "Missing required field: app_ids"
+            }), 400
+
+        app_ids = data["app_ids"]
+
+        if not isinstance(app_ids, list) or len(app_ids) < 2:
+            return jsonify({
+                "error": "app_ids must be a list with at least 2 application IDs"
+            }), 400
+
+        if len(app_ids) > 10:
+            return jsonify({
+                "error": "Maximum 10 jobs can be compared at once"
+            }), 400
+
+        # Fetch jobs from database
+        with db.get_session() as session:
+            jobs = session.query(SparkApplication).filter(
+                SparkApplication.app_id.in_(app_ids)
+            ).all()
+
+            if len(jobs) != len(app_ids):
+                found_ids = {job.app_id for job in jobs}
+                missing = set(app_ids) - found_ids
+                return jsonify({
+                    "error": f"Some jobs not found: {', '.join(missing)}"
+                }), 404
+
+            # Convert jobs to dictionaries with key metrics
+            job_data = []
+            for job in jobs:
+                job_dict = {
+                    "app_id": job.app_id,
+                    "app_name": job.app_name,
+                    "duration_ms": job.duration_ms or 0,
+                    "executor_memory_mb": job.executor_memory_mb or 0,
+                    "executor_cores": job.executor_cores or 0,
+                    "num_executors": job.num_executors or 0,
+                    "driver_memory_mb": job.driver_memory_mb or 0,
+                    "input_bytes": job.input_bytes or 0,
+                    "output_bytes": job.output_bytes or 0,
+                    "shuffle_read_bytes": job.shuffle_read_bytes or 0,
+                    "shuffle_write_bytes": job.shuffle_write_bytes or 0,
+                    "disk_spilled_bytes": job.disk_spilled_bytes or 0,
+                    "memory_spilled_bytes": job.memory_spilled_bytes or 0,
+                    "total_tasks": job.total_tasks or 0,
+                    "failed_tasks": job.failed_tasks or 0,
+                    "jvm_gc_time_ms": job.jvm_gc_time_ms or 0,
+                }
+
+                # Calculate efficiency metrics
+                if job_dict["duration_ms"] > 0 and job_dict["input_bytes"] > 0:
+                    # Throughput: GB/second
+                    job_dict["throughput_gbps"] = (
+                        job_dict["input_bytes"] / (1024**3)
+                    ) / (job_dict["duration_ms"] / 1000)
+
+                    # Resource efficiency: input processed per executor-hour
+                    total_executor_hours = (
+                        job_dict["num_executors"] * job_dict["duration_ms"] / (1000 * 3600)
+                    )
+                    if total_executor_hours > 0:
+                        job_dict["data_per_executor_hour_gb"] = (
+                            job_dict["input_bytes"] / (1024**3)
+                        ) / total_executor_hours
+                else:
+                    job_dict["throughput_gbps"] = 0
+                    job_dict["data_per_executor_hour_gb"] = 0
+
+                # Calculate spill ratio
+                if job_dict["input_bytes"] > 0:
+                    total_spilled = job_dict["disk_spilled_bytes"] + job_dict["memory_spilled_bytes"]
+                    job_dict["spill_ratio"] = total_spilled / job_dict["input_bytes"]
+                else:
+                    job_dict["spill_ratio"] = 0
+
+                job_data.append(job_dict)
+
+            # Find best and worst performers
+            jobs_with_duration = [j for j in job_data if j["duration_ms"] > 0]
+            jobs_with_throughput = [j for j in job_data if j["throughput_gbps"] > 0]
+
+            summary = {}
+
+            if jobs_with_duration:
+                fastest = min(jobs_with_duration, key=lambda x: x["duration_ms"])
+                slowest = max(jobs_with_duration, key=lambda x: x["duration_ms"])
+                summary["fastest"] = {
+                    "app_id": fastest["app_id"],
+                    "app_name": fastest["app_name"],
+                    "duration_ms": fastest["duration_ms"]
+                }
+                summary["slowest"] = {
+                    "app_id": slowest["app_id"],
+                    "app_name": slowest["app_name"],
+                    "duration_ms": slowest["duration_ms"]
+                }
+
+            if jobs_with_throughput:
+                most_efficient = max(jobs_with_throughput, key=lambda x: x["throughput_gbps"])
+                least_efficient = min(jobs_with_throughput, key=lambda x: x["throughput_gbps"])
+                summary["most_efficient"] = {
+                    "app_id": most_efficient["app_id"],
+                    "app_name": most_efficient["app_name"],
+                    "throughput_gbps": round(most_efficient["throughput_gbps"], 3)
+                }
+                summary["least_efficient"] = {
+                    "app_id": least_efficient["app_id"],
+                    "app_name": least_efficient["app_name"],
+                    "throughput_gbps": round(least_efficient["throughput_gbps"], 3)
+                }
+
+            # Generate recommendations based on comparison
+            recommendations = []
+
+            # Check for spilling differences
+            jobs_with_spill = [j for j in job_data if j["spill_ratio"] > 0]
+            jobs_without_spill = [j for j in job_data if j["spill_ratio"] == 0]
+
+            if jobs_with_spill and jobs_without_spill:
+                recommendations.append({
+                    "type": "spilling",
+                    "observation": f"{len(jobs_with_spill)} job(s) experienced spilling while "
+                                   f"{len(jobs_without_spill)} did not",
+                    "recommendation": "Jobs without spilling had sufficient memory allocation. "
+                                      "Consider matching their executor memory configuration."
+                })
+
+            # Check for resource allocation differences
+            if jobs_with_throughput:
+                avg_memory = sum(j["executor_memory_mb"] for j in job_data) / len(job_data)
+                high_throughput_jobs = [j for j in jobs_with_throughput
+                                        if j["throughput_gbps"] > most_efficient["throughput_gbps"] * 0.8]
+
+                if high_throughput_jobs:
+                    avg_memory_efficient = sum(j["executor_memory_mb"] for j in high_throughput_jobs) / len(high_throughput_jobs)
+
+                    if avg_memory_efficient < avg_memory * 0.8:
+                        recommendations.append({
+                            "type": "resource_optimization",
+                            "observation": "Higher-throughput jobs use less memory on average",
+                            "recommendation": f"Consider reducing executor memory to around {int(avg_memory_efficient)}MB "
+                                              "for better cost-efficiency"
+                        })
+
+            # Check for task failure patterns
+            jobs_with_failures = [j for j in job_data if j["failed_tasks"] > 0]
+            jobs_without_failures = [j for j in job_data if j["failed_tasks"] == 0]
+
+            if jobs_with_failures and jobs_without_failures:
+                recommendations.append({
+                    "type": "reliability",
+                    "observation": f"{len(jobs_with_failures)} job(s) had task failures",
+                    "recommendation": "Analyze successful jobs' configurations and apply similar settings. "
+                                      "Consider enabling adaptive execution."
+                })
+
+            return jsonify({
+                "jobs": job_data,
+                "summary": summary,
+                "recommendations": recommendations,
+                "compared_count": len(job_data)
+            })
+
+    except Exception as e:
+        logger.error(f"Error comparing jobs: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/v1/stats", methods=["GET"])
 def get_stats():
     """Get aggregate statistics"""
