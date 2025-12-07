@@ -2,11 +2,12 @@
 REST API Server for Spark Resource Optimizer
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from dataclasses import asdict
 from typing import Optional
 import logging
+import os
 
 from spark_optimizer.storage.database import Database
 from spark_optimizer.recommender.similarity_recommender import SimilarityRecommender
@@ -62,6 +63,28 @@ def health_check():
     return jsonify(
         {"status": "healthy", "service": "spark-resource-optimizer", "version": "0.1.0"}
     )
+
+
+@app.route("/api/v1/openapi.yaml", methods=["GET"])
+def get_openapi_spec():
+    """Serve the OpenAPI specification in YAML format"""
+    try:
+        # Get the path to the openapi.yaml file
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        openapi_path = os.path.join(current_dir, "openapi.yaml")
+
+        if not os.path.exists(openapi_path):
+            return jsonify({"error": "OpenAPI specification not found"}), 404
+
+        return send_file(
+            openapi_path,
+            mimetype="application/x-yaml",
+            as_attachment=False,
+            download_name="openapi.yaml"
+        )
+    except Exception as e:
+        logger.error(f"Error serving OpenAPI spec: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/v1/recommend", methods=["POST"])

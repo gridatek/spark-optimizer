@@ -1,0 +1,762 @@
+openapi: 3.0.3
+info:
+  title: Spark Resource Optimizer API
+  description: |
+    REST API for optimizing Apache Spark resource allocation and analyzing job performance.
+
+    This API provides endpoints for:
+    - Getting resource recommendations for new Spark jobs
+    - Analyzing completed jobs for performance issues
+    - Collecting job data from Spark History Server
+    - Comparing multiple jobs side-by-side
+    - Retrieving job statistics and metrics
+  version: 1.0.0
+  contact:
+    name: Spark Resource Optimizer
+    url: https://github.com/yourusername/spark-resource-optimizer
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Development server
+  - url: http://localhost:8080
+    description: Production server
+
+tags:
+  - name: Health
+    description: System health and status
+  - name: Recommendations
+    description: Resource allocation recommendations
+  - name: Jobs
+    description: Job data and metrics
+  - name: Analysis
+    description: Job performance analysis
+  - name: Collection
+    description: Data collection from external sources
+  - name: Comparison
+    description: Multi-job comparison
+  - name: Statistics
+    description: Aggregate statistics
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the API server is running and healthy
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  version:
+                    type: string
+                    example: 1.0.0
+
+  /api/v1/recommend:
+    post:
+      tags:
+        - Recommendations
+      summary: Get resource recommendations
+      description: |
+        Get recommended Spark resource configuration for a new job based on input size,
+        job type, and optimization priorities.
+      operationId: getRecommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationRequest'
+            examples:
+              etl_job:
+                summary: ETL job with balanced priority
+                value:
+                  input_size_bytes: 10737418240
+                  job_type: etl
+                  priority: balanced
+              ml_job:
+                summary: ML job with performance priority
+                value:
+                  input_size_bytes: 53687091200
+                  job_type: ml
+                  priority: performance
+                  sla_minutes: 60
+      responses:
+        '200':
+          description: Recommendation generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/jobs:
+    get:
+      tags:
+        - Jobs
+      summary: List jobs
+      description: Retrieve a list of Spark jobs with optional filtering
+      operationId: listJobs
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of jobs to return
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: job_type
+          in: query
+          description: Filter by job type
+          schema:
+            type: string
+            enum: [etl, ml, streaming, batch, interactive]
+        - name: min_duration
+          in: query
+          description: Minimum duration in milliseconds
+          schema:
+            type: integer
+            minimum: 0
+        - name: max_duration
+          in: query
+          description: Maximum duration in milliseconds
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobSummary'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/jobs/{app_id}:
+    get:
+      tags:
+        - Jobs
+      summary: Get job details
+      description: Retrieve detailed information about a specific Spark job
+      operationId: getJob
+      parameters:
+        - name: app_id
+          in: path
+          required: true
+          description: Application ID
+          schema:
+            type: string
+            example: app-20241207-123456-0000
+      responses:
+        '200':
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetails'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/jobs/{app_id}/analyze:
+    get:
+      tags:
+        - Analysis
+      summary: Analyze job performance
+      description: |
+        Analyze a completed Spark job using rule-based optimization engine to identify
+        performance issues and generate recommendations with Spark configuration suggestions.
+      operationId: analyzeJob
+      parameters:
+        - name: app_id
+          in: path
+          required: true
+          description: Application ID
+          schema:
+            type: string
+            example: app-20241207-123456-0000
+      responses:
+        '200':
+          description: Job analysis results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyzeResponse'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/collect:
+    post:
+      tags:
+        - Collection
+      summary: Collect jobs from History Server
+      description: |
+        Fetch job data from Spark History Server REST API and store in the database.
+        Skips jobs that already exist.
+      operationId: collectJobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectRequest'
+            examples:
+              basic:
+                summary: Collect completed jobs
+                value:
+                  history_server_url: http://localhost:18080
+                  max_apps: 100
+                  status: completed
+              recent:
+                summary: Collect recent jobs
+                value:
+                  history_server_url: http://localhost:18080
+                  max_apps: 50
+                  min_date: "2024-01-01T00:00:00"
+      responses:
+        '200':
+          description: Collection completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Cannot connect to History Server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/compare:
+    post:
+      tags:
+        - Comparison
+      summary: Compare multiple jobs
+      description: |
+        Compare 2-10 Spark jobs side-by-side to identify patterns, performance differences,
+        and optimization opportunities. Generates recommendations based on best performers.
+      operationId: compareJobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompareRequest'
+            examples:
+              two_jobs:
+                summary: Compare two jobs
+                value:
+                  app_ids:
+                    - app-20241207-123456-0000
+                    - app-20241207-234567-0001
+              multiple_jobs:
+                summary: Compare multiple jobs
+                value:
+                  app_ids:
+                    - app-20241207-123456-0000
+                    - app-20241207-234567-0001
+                    - app-20241207-345678-0002
+      responses:
+        '200':
+          description: Job comparison results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompareResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: One or more jobs not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/stats:
+    get:
+      tags:
+        - Statistics
+      summary: Get aggregate statistics
+      description: Retrieve aggregate statistics across all jobs in the database
+      operationId: getStats
+      responses:
+        '200':
+          description: Aggregate statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_jobs:
+                    type: integer
+                  avg_duration_ms:
+                    type: number
+                    format: float
+                  total_input_gb:
+                    type: number
+                    format: float
+
+components:
+  schemas:
+    RecommendationRequest:
+      type: object
+      required:
+        - input_size_bytes
+      properties:
+        input_size_bytes:
+          type: integer
+          minimum: 1
+          description: Expected input data size in bytes
+          example: 10737418240
+        job_type:
+          type: string
+          enum: [etl, ml, streaming, batch, interactive]
+          description: Type of Spark job
+          example: etl
+        sla_minutes:
+          type: integer
+          minimum: 1
+          description: Maximum acceptable duration in minutes
+          example: 60
+        budget_dollars:
+          type: number
+          format: float
+          minimum: 0
+          description: Maximum acceptable cost in dollars
+          example: 100.0
+        priority:
+          type: string
+          enum: [performance, cost, balanced]
+          default: balanced
+          description: Optimization priority
+          example: balanced
+
+    ResourceConfiguration:
+      type: object
+      required:
+        - executor_cores
+        - executor_memory_mb
+        - num_executors
+        - driver_memory_mb
+      properties:
+        executor_cores:
+          type: integer
+          minimum: 1
+          description: Number of cores per executor
+          example: 4
+        executor_memory_mb:
+          type: integer
+          minimum: 1024
+          description: Memory per executor in MB
+          example: 8192
+        num_executors:
+          type: integer
+          minimum: 1
+          description: Number of executors
+          example: 10
+        driver_memory_mb:
+          type: integer
+          minimum: 1024
+          description: Driver memory in MB
+          example: 4096
+
+    RecommendationResponse:
+      type: object
+      required:
+        - configuration
+        - confidence
+        - metadata
+      properties:
+        configuration:
+          $ref: '#/components/schemas/ResourceConfiguration'
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Confidence score for the recommendation
+          example: 0.85
+        metadata:
+          type: object
+          properties:
+            method:
+              type: string
+              example: rule_based
+            job_type:
+              type: string
+              example: etl
+            priority:
+              type: string
+              example: balanced
+            rules_applied:
+              type: integer
+              example: 3
+            optimization_hints:
+              type: array
+              items:
+                type: object
+
+    CollectRequest:
+      type: object
+      required:
+        - history_server_url
+      properties:
+        history_server_url:
+          type: string
+          format: uri
+          description: URL of the Spark History Server
+          example: http://localhost:18080
+        max_apps:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+          description: Maximum number of applications to fetch
+          example: 100
+        status:
+          type: string
+          enum: [completed, running, failed]
+          default: completed
+          description: Application status filter
+          example: completed
+        min_date:
+          type: string
+          format: date-time
+          description: Minimum date for applications (ISO format)
+          example: "2024-01-01T00:00:00"
+
+    CollectResponse:
+      type: object
+      required:
+        - success
+        - collected
+        - failed
+        - skipped
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        collected:
+          type: integer
+          minimum: 0
+          description: Number of jobs successfully collected
+          example: 42
+        failed:
+          type: integer
+          minimum: 0
+          description: Number of jobs that failed to collect
+          example: 2
+        skipped:
+          type: integer
+          minimum: 0
+          description: Number of jobs skipped (duplicates)
+          example: 5
+        message:
+          type: string
+          example: Successfully collected 42 jobs from History Server
+
+    CompareRequest:
+      type: object
+      required:
+        - app_ids
+      properties:
+        app_ids:
+          type: array
+          minItems: 2
+          maxItems: 10
+          uniqueItems: true
+          items:
+            type: string
+          description: List of application IDs to compare
+          example:
+            - app-20241207-123456-0000
+            - app-20241207-234567-0001
+        metrics:
+          type: array
+          items:
+            type: string
+          description: Specific metrics to compare (all if not specified)
+
+    CompareResponse:
+      type: object
+      required:
+        - jobs
+        - summary
+        - recommendations
+        - compared_count
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobMetrics'
+        summary:
+          $ref: '#/components/schemas/ComparisonSummary'
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComparisonRecommendation'
+        compared_count:
+          type: integer
+          minimum: 2
+          example: 3
+
+    JobMetrics:
+      type: object
+      properties:
+        app_id:
+          type: string
+        app_name:
+          type: string
+        duration_ms:
+          type: integer
+        executor_memory_mb:
+          type: integer
+        executor_cores:
+          type: integer
+        num_executors:
+          type: integer
+        throughput_gbps:
+          type: number
+          format: float
+        spill_ratio:
+          type: number
+          format: float
+
+    ComparisonSummary:
+      type: object
+      properties:
+        fastest:
+          type: object
+          properties:
+            app_id:
+              type: string
+            app_name:
+              type: string
+            duration_ms:
+              type: integer
+        slowest:
+          type: object
+          properties:
+            app_id:
+              type: string
+            app_name:
+              type: string
+            duration_ms:
+              type: integer
+        most_efficient:
+          type: object
+          properties:
+            app_id:
+              type: string
+            app_name:
+              type: string
+            throughput_gbps:
+              type: number
+        least_efficient:
+          type: object
+          properties:
+            app_id:
+              type: string
+            app_name:
+              type: string
+            throughput_gbps:
+              type: number
+
+    ComparisonRecommendation:
+      type: object
+      required:
+        - type
+        - observation
+        - recommendation
+      properties:
+        type:
+          type: string
+          example: spilling
+        observation:
+          type: string
+          example: 2 job(s) experienced spilling while 1 did not
+        recommendation:
+          type: string
+          example: Consider matching the memory configuration of jobs without spilling
+
+    AnalyzeResponse:
+      type: object
+      required:
+        - app_id
+        - app_name
+        - analysis
+        - current_configuration
+        - recommended_configuration
+        - spark_configs
+        - recommendations
+      properties:
+        app_id:
+          type: string
+        app_name:
+          type: string
+        analysis:
+          type: object
+          properties:
+            total_recommendations:
+              type: integer
+            critical:
+              type: integer
+            warnings:
+              type: integer
+            info:
+              type: integer
+            health_score:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+        current_configuration:
+          $ref: '#/components/schemas/ResourceConfiguration'
+        recommended_configuration:
+          $ref: '#/components/schemas/ResourceConfiguration'
+        spark_configs:
+          type: object
+          additionalProperties:
+            type: string
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OptimizationRecommendation'
+
+    OptimizationRecommendation:
+      type: object
+      required:
+        - rule_id
+        - title
+        - description
+        - severity
+        - current_value
+        - recommended_value
+        - expected_improvement
+        - spark_configs
+      properties:
+        rule_id:
+          type: string
+          example: MEM001
+        title:
+          type: string
+          example: Memory Spilling Detected
+        description:
+          type: string
+          example: Job spilled 2.00 GB to disk/memory
+        severity:
+          type: string
+          enum: [critical, warning, info]
+          example: critical
+        current_value:
+          type: string
+          example: "4096 MB"
+        recommended_value:
+          type: string
+          example: "6144 MB"
+        expected_improvement:
+          type: string
+          example: 20-50% faster execution
+        spark_configs:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            spark.executor.memory: "6144m"
+
+    JobSummary:
+      type: object
+      properties:
+        app_id:
+          type: string
+        app_name:
+          type: string
+        duration_ms:
+          type: integer
+        input_bytes:
+          type: integer
+        num_executors:
+          type: integer
+
+    JobDetails:
+      allOf:
+        - $ref: '#/components/schemas/JobSummary'
+        - type: object
+          properties:
+            executor_cores:
+              type: integer
+            executor_memory_mb:
+              type: integer
+            driver_memory_mb:
+              type: integer
+            total_tasks:
+              type: integer
+            failed_tasks:
+              type: integer
+            disk_spilled_bytes:
+              type: integer
+            memory_spilled_bytes:
+              type: integer
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: Invalid request parameters
+        message:
+          type: string
+          description: Additional error details
+          example: input_size_bytes must be greater than 0
