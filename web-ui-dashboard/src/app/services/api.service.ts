@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, from, switchMap, shareReplay } from 'rxjs';
+import { Observable, switchMap, shareReplay, map, catchError, of } from 'rxjs';
 import { SparkJob, JobListResponse } from '../models/job.model';
 import {
   RecommendationRequest,
@@ -17,13 +17,17 @@ export class ApiService {
 
   constructor() {
     this.config$ = this.http.get<{ apiUrl: string }>('/config.json').pipe(
+      catchError(error => {
+        console.error('Failed to load config.json, using default', error);
+        return of({ apiUrl: 'http://localhost:8080' });
+      }),
       shareReplay(1)
     );
   }
 
   private getApiUrl(): Observable<string> {
     return this.config$.pipe(
-      switchMap(config => from([config.apiUrl]))
+      map(config => config.apiUrl)
     );
   }
 
