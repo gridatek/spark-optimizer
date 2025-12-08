@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, from, switchMap, shareReplay } from 'rxjs';
 import { SparkJob, JobListResponse } from '../models/job.model';
 import {
   RecommendationRequest,
@@ -12,13 +12,26 @@ import {
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:8080/api/v1';
+  private http = inject(HttpClient);
+  private config$: Observable<{ apiUrl: string }>;
 
-  constructor(private http: HttpClient) {}
+  constructor() {
+    this.config$ = this.http.get<{ apiUrl: string }>('/config.json').pipe(
+      shareReplay(1)
+    );
+  }
+
+  private getApiUrl(): Observable<string> {
+    return this.config$.pipe(
+      switchMap(config => from([config.apiUrl]))
+    );
+  }
 
   // Health Check
   healthCheck(): Observable<{ status: string; service: string }> {
-    return this.http.get<{ status: string; service: string }>(`${this.apiUrl}/health`);
+    return this.getApiUrl().pipe(
+      switchMap(apiUrl => this.http.get<{ status: string; service: string }>(`${apiUrl}/health`))
+    );
   }
 
   // Jobs
@@ -40,20 +53,28 @@ export class ApiService {
         }
       });
     }
-    return this.http.get<JobListResponse>(`${this.apiUrl}/jobs`, { params: httpParams });
+    return this.getApiUrl().pipe(
+      switchMap(apiUrl => this.http.get<JobListResponse>(`${apiUrl}/api/v1/jobs`, { params: httpParams }))
+    );
   }
 
   getJobDetails(appId: string): Observable<SparkJob> {
-    return this.http.get<SparkJob>(`${this.apiUrl}/jobs/${appId}`);
+    return this.getApiUrl().pipe(
+      switchMap(apiUrl => this.http.get<SparkJob>(`${apiUrl}/api/v1/jobs/${appId}`))
+    );
   }
 
   analyzeJob(appId: string): Observable<JobAnalysis> {
-    return this.http.get<JobAnalysis>(`${this.apiUrl}/analyze/${appId}`);
+    return this.getApiUrl().pipe(
+      switchMap(apiUrl => this.http.get<JobAnalysis>(`${apiUrl}/api/v1/jobs/${appId}/analyze`))
+    );
   }
 
   // Recommendations
   getRecommendation(request: RecommendationRequest): Observable<RecommendationResponse> {
-    return this.http.post<RecommendationResponse>(`${this.apiUrl}/recommend`, request);
+    return this.getApiUrl().pipe(
+      switchMap(apiUrl => this.http.post<RecommendationResponse>(`${apiUrl}/api/v1/recommend`, request))
+    );
   }
 
   // Feedback
@@ -63,7 +84,9 @@ export class ApiService {
     satisfaction_score?: number;
     comments?: string;
   }): Observable<{ status: string; message: string }> {
-    return this.http.post<{ status: string; message: string }>(`${this.apiUrl}/feedback`, data);
+    return this.getApiUrl().pipe(
+      switchMap(apiUrl => this.http.post<{ status: string; message: string }>(`${apiUrl}/api/v1/feedback`, data))
+    );
   }
 
   // Collection
@@ -77,6 +100,8 @@ export class ApiService {
     jobs_stored: number;
     errors: number;
   }> {
-    return this.http.post<any>(`${this.apiUrl}/collect`, data);
+    return this.getApiUrl().pipe(
+      switchMap(apiUrl => this.http.post<any>(`${apiUrl}/api/v1/collect`, data))
+    );
   }
 }

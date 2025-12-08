@@ -139,6 +139,12 @@ jobs:
             exit 1
           fi
 
+      - name: Generate frontend config
+        working-directory: web-ui-dashboard/src
+        run: |
+          echo '{"apiUrl": "http://localhost:8080"}' > config.json
+          cat config.json
+
       - name: Run E2E tests
         working-directory: web-ui-dashboard
         env:
