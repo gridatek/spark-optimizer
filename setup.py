@@ -45,6 +45,10 @@ setup(
         "databricks": [
             "requests>=2.28.0",
         ],
+        "gcp": [
+            "google-cloud-dataproc>=5.0.0",
+            "google-cloud-monitoring>=2.11.0",
+        ],
     },
     entry_points={
         "console_scripts": [

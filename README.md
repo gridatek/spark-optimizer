@@ -39,6 +39,7 @@ pip install -e .
 # Optional: Install with cloud provider support
 pip install -e ".[aws]"          # For AWS EMR integration
 pip install -e ".[databricks]"   # For Databricks integration
+pip install -e ".[gcp]"          # For GCP Dataproc integration
 
 # Setup database
 python scripts/setup_db.py
@@ -60,6 +61,10 @@ spark-optimizer collect-from-emr --region us-west-2
 # Collect data from Databricks
 pip install spark-resource-optimizer[databricks]
 spark-optimizer collect-from-databricks --workspace-url https://dbc-xxx.cloud.databricks.com
+
+# Collect data from GCP Dataproc
+pip install spark-resource-optimizer[gcp]
+spark-optimizer collect-from-dataproc --project my-project --region us-central1
 
 # Get recommendations for a new job
 spark-optimizer recommend --input-size 10GB --job-type etl
@@ -99,7 +104,8 @@ spark-resource-optimizer/
 │   ├── recommendation-engine.md
 │   ├── api-reference.md
 │   ├── AWS_EMR_INTEGRATION.md
-│   └── DATABRICKS_INTEGRATION.md
+│   ├── DATABRICKS_INTEGRATION.md
+│   └── GCP_DATAPROC_INTEGRATION.md
 ├── src/
 │   └── spark_optimizer/
 │       ├── __init__.py
