@@ -1,6 +1,8 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartType } from 'chart.js';
 import { ApiService } from '../../services/api.service';
 import {
   RecommendationRequest,
@@ -9,7 +11,7 @@ import {
 
 @Component({
   selector: 'app-recommendations',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BaseChartDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="p-8 max-w-7xl mx-auto">
@@ -206,9 +208,90 @@ import {
               }
             </div>
 
+            <!-- Resource Allocation Visualization -->
+            <div class="mb-8">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Resource Allocation</h3>
+              <div class="bg-gray-50 rounded-md p-6">
+                <div class="h-64">
+                  <canvas
+                    baseChart
+                    [type]="barChartType"
+                    [data]="resourceChartData()"
+                    [options]="barChartOptions"
+                  ></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Similar Jobs Visualization -->
+            @if (hasSimilarJobs()) {
+              <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Similar Jobs Analysis</h3>
+                <div class="bg-gray-50 rounded-md p-4">
+                  <p class="text-sm text-gray-600 mb-4">
+                    This recommendation is based on {{ getSimilarJobsCount() }} similar historical jobs
+                  </p>
+                  <div class="space-y-2">
+                    @for (similarJob of getSimilarJobs(); track similarJob.app_id) {
+                      <div class="flex items-center gap-3 p-3 bg-white rounded border border-gray-200">
+                        <div class="flex-1">
+                          <div class="text-sm font-mono text-gray-900">{{ similarJob.app_id }}</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <div class="text-sm text-gray-600">Similarity:</div>
+                          <div class="flex items-center gap-2">
+                            <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                [style.width.%]="similarJob.similarity * 100"
+                                class="h-full bg-gradient-to-r from-blue-500 to-green-500"
+                              ></div>
+                            </div>
+                            <span class="text-sm font-semibold text-gray-900">
+                              {{ (similarJob.similarity * 100).toFixed(0) }}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Cost-Performance Trade-off -->
+            @if (recommendation.predicted_metrics) {
+              <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Cost-Performance Indicator</h3>
+                <div class="bg-gray-50 rounded-md p-6">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1 text-center">
+                      <div class="text-2xl mb-2">💰</div>
+                      <div class="text-sm text-gray-600">Cost Efficient</div>
+                    </div>
+                    <div class="flex-1 px-8">
+                      <div class="relative h-6 bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded-full">
+                        <div
+                          [style.left.%]="getCostPerformanceScore() * 100"
+                          class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-blue-600 border-2 border-white rounded-full shadow-lg"
+                        ></div>
+                      </div>
+                    </div>
+                    <div class="flex-1 text-center">
+                      <div class="text-2xl mb-2">⚡</div>
+                      <div class="text-sm text-gray-600">High Performance</div>
+                    </div>
+                  </div>
+                  <div class="text-center text-sm text-gray-600">
+                    This configuration balances cost (\${{ recommendation.predicted_metrics.cost_usd.toFixed(2) }})
+                    and performance (~{{ recommendation.predicted_metrics.duration_minutes }} min)
+                  </div>
+                </div>
+              </div>
+            }
+
             <!-- Spark Configuration -->
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Spark Configuration</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Spark Submit Command</h3>
               <div class="bg-gray-800 rounded-md p-4 overflow-x-auto">
                 <pre class="text-gray-200 text-sm font-mono leading-relaxed"><code>spark-submit \
   --num-executors {{ recommendation.configuration.num_executors }} \
@@ -217,6 +300,12 @@ import {
   --driver-memory {{ formatMemory(recommendation.configuration.driver_memory_mb) }} \
   your-spark-app.jar</code></pre>
               </div>
+              <button
+                (click)="copyToClipboard()"
+                class="mt-3 px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors text-sm"
+              >
+                {{ copied() ? '✓ Copied!' : '📋 Copy Command' }}
+              </button>
             </div>
           </div>
         }
@@ -241,9 +330,60 @@ export class Recommendations {
   recommendation: RecommendationResponse | null = null;
   loading = false;
   error: string | null = null;
+  copied = signal(false);
 
   jobTypes = ['etl', 'ml', 'sql', 'streaming'];
   methods = ['similarity', 'ml', 'rule_based', 'hybrid'];
+
+  // Chart configuration
+  barChartType: ChartType = 'bar';
+  barChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    scales: {
+      x: {
+        beginAtZero: true
+      }
+    }
+  };
+
+  resourceChartData = computed<ChartConfiguration['data']>(() => {
+    if (!this.recommendation) {
+      return { datasets: [] };
+    }
+
+    const config = this.recommendation.configuration;
+    return {
+      labels: ['Executors', 'Executor Cores', 'Executor Memory (GB)', 'Driver Memory (GB)'],
+      datasets: [{
+        data: [
+          config.num_executors,
+          config.executor_cores,
+          config.executor_memory_mb / 1024,
+          config.driver_memory_mb / 1024
+        ],
+        backgroundColor: [
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(147, 51, 234, 0.8)',
+          'rgba(236, 72, 153, 0.8)',
+          'rgba(245, 158, 11, 0.8)'
+        ],
+        borderColor: [
+          'rgb(59, 130, 246)',
+          'rgb(147, 51, 234)',
+          'rgb(236, 72, 153)',
+          'rgb(245, 158, 11)'
+        ],
+        borderWidth: 1
+      }]
+    };
+  });
 
   constructor(private apiService: ApiService) {}
 
@@ -287,5 +427,58 @@ export class Recommendations {
     };
     this.recommendation = null;
     this.error = null;
+    this.copied.set(false);
+  }
+
+  getCostPerformanceScore(): number {
+    if (!this.recommendation?.predicted_metrics) {
+      return 0.5; // Default middle value
+    }
+
+    // Calculate a score between 0 (cost-efficient) and 1 (high-performance)
+    // Lower cost and lower duration = more towards cost-efficient
+    // Higher cost and lower duration = more towards high-performance
+    const cost = this.recommendation.predicted_metrics.cost_usd;
+    const duration = this.recommendation.predicted_metrics.duration_minutes;
+
+    // Normalize: assuming reasonable ranges
+    // Cost: $0-$10, Duration: 0-60 minutes
+    const normalizedCost = Math.min(cost / 10, 1);
+    const normalizedDuration = Math.min(duration / 60, 1);
+
+    // Score: if cost is high but duration is low, it's performance-oriented
+    // if cost is low but duration is higher, it's cost-oriented
+    return (normalizedCost + (1 - normalizedDuration)) / 2;
+  }
+
+  copyToClipboard(): void {
+    if (!this.recommendation) return;
+
+    const config = this.recommendation.configuration;
+    const command = `spark-submit \\
+  --num-executors ${config.num_executors} \\
+  --executor-cores ${config.executor_cores} \\
+  --executor-memory ${this.formatMemory(config.executor_memory_mb)} \\
+  --driver-memory ${this.formatMemory(config.driver_memory_mb)} \\
+  your-spark-app.jar`;
+
+    navigator.clipboard.writeText(command).then(() => {
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  }
+
+  hasSimilarJobs(): boolean {
+    return (this.recommendation?.metadata?.similar_jobs?.length ?? 0) > 0;
+  }
+
+  getSimilarJobsCount(): number {
+    return this.recommendation?.metadata?.similar_jobs?.length ?? 0;
+  }
+
+  getSimilarJobs(): Array<{ app_id: string; similarity: number }> {
+    return (this.recommendation?.metadata?.similar_jobs ?? []).slice(0, 5);
   }
 }

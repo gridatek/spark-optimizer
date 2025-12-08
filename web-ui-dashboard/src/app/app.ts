@@ -25,6 +25,14 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               Dashboard
             </a>
             <a
+              routerLink="/analytics"
+              routerLinkActive="bg-blue-500 text-white"
+              class="flex items-center gap-2 px-6 py-3 rounded-md no-underline text-gray-700 font-medium transition-all hover:bg-gray-100 hover:text-gray-900"
+            >
+              <span class="text-lg">📈</span>
+              Analytics
+            </a>
+            <a
               routerLink="/recommendations"
               routerLinkActive="bg-blue-500 text-white"
               class="flex items-center gap-2 px-6 py-3 rounded-md no-underline text-gray-700 font-medium transition-all hover:bg-gray-100 hover:text-gray-900"
@@ -55,6 +63,15 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             >
               <span class="text-lg">📊</span>
               Dashboard
+            </a>
+            <a
+              routerLink="/analytics"
+              routerLinkActive="bg-blue-500 text-white"
+              (click)="toggleMenu()"
+              class="flex items-center gap-2 px-6 py-3 rounded-md no-underline text-gray-700 font-medium transition-all hover:bg-gray-100 hover:text-gray-900 w-full justify-start"
+            >
+              <span class="text-lg">📈</span>
+              Analytics
             </a>
             <a
               routerLink="/recommendations"
