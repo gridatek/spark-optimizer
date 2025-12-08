@@ -47,10 +47,10 @@ test.describe('Dashboard Page', () => {
     await expect(page.getByRole('heading', { name: 'Recent Jobs' })).toBeVisible();
 
     // Check for table headers
-    await expect(page.getByText('App ID')).toBeVisible();
+    await expect(page.getByText('App ID').first()).toBeVisible();
     await expect(page.getByText('App Name')).toBeVisible();
-    await expect(page.getByText('Status')).toBeVisible();
-    await expect(page.getByText('Duration')).toBeVisible();
+    await expect(page.getByText('Status').first()).toBeVisible();
+    await expect(page.getByText('Duration').nth(1)).toBeVisible(); // Use nth(1) to get the table header, not the stat card
   });
 
   test('should handle loading state', async ({ page }) => {

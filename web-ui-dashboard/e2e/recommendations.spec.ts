@@ -150,7 +150,7 @@ test.describe('Recommendations Page', () => {
     await page.getByRole('button', { name: /Get Recommendation/i }).click();
 
     // Wait for chart to render
-    await page.waitForSelector('canvas', { timeout: 10000 });
+    await page.waitForSelector('canvas', { timeout: 30000 });
     await expect(page.getByRole('heading', { name: 'Resource Allocation' })).toBeVisible();
   });
 

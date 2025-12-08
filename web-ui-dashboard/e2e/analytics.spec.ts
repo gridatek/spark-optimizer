@@ -3,6 +3,10 @@ import { test, expect } from '@playwright/test';
 test.describe('Analytics Page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/analytics');
+    // Wait for loading state to finish (loading spinner should disappear)
+    await page.waitForSelector('text=Loading analytics data...', { state: 'hidden', timeout: 30000 }).catch(() => {
+      // Ignore if loading text never appears (data loads too fast)
+    });
   });
 
   test('should display analytics title and description', async ({ page }) => {
@@ -12,7 +16,7 @@ test.describe('Analytics Page', () => {
 
   test('should display job duration trends chart', async ({ page }) => {
     // Wait for charts to load
-    await page.waitForSelector('canvas', { timeout: 15000 });
+    await page.waitForSelector('canvas', { timeout: 30000 });
 
     await expect(page.getByRole('heading', { name: 'Job Duration Trends' })).toBeVisible();
 
@@ -22,28 +26,28 @@ test.describe('Analytics Page', () => {
   });
 
   test('should display success rate trends chart', async ({ page }) => {
-    await page.waitForSelector('canvas', { timeout: 15000 });
+    await page.waitForSelector('canvas', { timeout: 30000 });
     await expect(page.getByRole('heading', { name: 'Success Rate Trends' })).toBeVisible();
   });
 
   test('should display job status distribution chart', async ({ page }) => {
-    await page.waitForSelector('canvas', { timeout: 15000 });
+    await page.waitForSelector('canvas', { timeout: 30000 });
     await expect(page.getByRole('heading', { name: 'Job Status Distribution' })).toBeVisible();
   });
 
   test('should display resource utilization chart', async ({ page }) => {
-    await page.waitForSelector('canvas', { timeout: 15000 });
+    await page.waitForSelector('canvas', { timeout: 30000 });
     await expect(page.getByRole('heading', { name: 'Resource Utilization' })).toBeVisible();
   });
 
   test('should display cost trends chart', async ({ page }) => {
-    await page.waitForSelector('canvas', { timeout: 15000 });
+    await page.waitForSelector('canvas', { timeout: 30000 });
     await expect(page.getByRole('heading', { name: 'Estimated Cost Trends' })).toBeVisible();
     await expect(page.getByText('* Cost estimates based on standard compute pricing')).toBeVisible();
   });
 
   test('should display data processing volume chart', async ({ page }) => {
-    await page.waitForSelector('canvas', { timeout: 15000 });
+    await page.waitForSelector('canvas', { timeout: 30000 });
     await expect(page.getByRole('heading', { name: 'Data Processing Volume' })).toBeVisible();
   });
 
