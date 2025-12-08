@@ -334,9 +334,10 @@ export class Recommendations {
   get request() { return this.formData; }
   set request(val: any) { Object.assign(this.formData, val); }
 
-  recommendation: RecommendationResponse | null = null;
-  loading = false;
-  error: string | null = null;
+  // Use signals for reactive state
+  recommendation = signal<RecommendationResponse | null>(null);
+  loading = signal(false);
+  error = signal<string | null>(null);
   copied = signal(false);
 
   jobTypes = ['etl', 'ml', 'sql', 'streaming'];
@@ -361,11 +362,12 @@ export class Recommendations {
   };
 
   resourceChartData = computed<ChartConfiguration['data']>(() => {
-    if (!this.recommendation) {
+    const rec = this.recommendation();
+    if (!rec) {
       return { datasets: [] };
     }
 
-    const config = this.recommendation.configuration;
+    const config = rec.configuration;
     return {
       labels: ['Executors', 'Executor Cores', 'Executor Memory (GB)', 'Driver Memory (GB)'],
       datasets: [{
@@ -396,13 +398,13 @@ export class Recommendations {
 
   getRecommendation(): void {
     if (!this.formData.input_size_gb || this.formData.input_size_gb <= 0) {
-      this.error = 'Please enter a valid input size';
+      this.error.set('Please enter a valid input size');
       return;
     }
 
-    this.loading = true;
-    this.error = null;
-    this.recommendation = null;
+    this.loading.set(true);
+    this.error.set(null);
+    this.recommendation.set(null);
 
     // Convert GB to bytes for API request
     const apiRequest: RecommendationRequest = {
@@ -415,14 +417,14 @@ export class Recommendations {
     this.apiService.getRecommendation(apiRequest).subscribe({
       next: (response) => {
         console.log('Received recommendation response:', response);
-        this.recommendation = response;
-        this.loading = false;
-        console.log('Updated component state - loading:', this.loading, 'recommendation:', this.recommendation);
+        this.recommendation.set(response);
+        this.loading.set(false);
+        console.log('Updated component state - loading:', this.loading(), 'recommendation:', this.recommendation());
       },
       error: (err) => {
-        this.error = 'Failed to get recommendation. Please try again.';
+        this.error.set('Failed to get recommendation. Please try again.');
         console.error('Error getting recommendation:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }
@@ -444,21 +446,22 @@ export class Recommendations {
       app_name: '',
       priority: 'balanced'
     };
-    this.recommendation = null;
-    this.error = null;
+    this.recommendation.set(null);
+    this.error.set(null);
     this.copied.set(false);
   }
 
   getCostPerformanceScore(): number {
-    if (!this.recommendation?.predicted_metrics) {
+    const rec = this.recommendation();
+    if (!rec?.predicted_metrics) {
       return 0.5; // Default middle value
     }
 
     // Calculate a score between 0 (cost-efficient) and 1 (high-performance)
     // Lower cost and lower duration = more towards cost-efficient
     // Higher cost and lower duration = more towards high-performance
-    const cost = this.recommendation.predicted_metrics.cost_usd;
-    const duration = this.recommendation.predicted_metrics.duration_minutes;
+    const cost = rec.predicted_metrics.cost_usd;
+    const duration = rec.predicted_metrics.duration_minutes;
 
     // Normalize: assuming reasonable ranges
     // Cost: $0-$10, Duration: 0-60 minutes
@@ -471,9 +474,10 @@ export class Recommendations {
   }
 
   copyToClipboard(): void {
-    if (!this.recommendation) return;
+    const rec = this.recommendation();
+    if (!rec) return;
 
-    const config = this.recommendation.configuration;
+    const config = rec.configuration;
     const command = `spark-submit \\
   --num-executors ${config.num_executors} \\
   --executor-cores ${config.executor_cores} \\
@@ -490,14 +494,17 @@ export class Recommendations {
   }
 
   hasSimilarJobs(): boolean {
-    return (this.recommendation?.metadata?.similar_jobs?.length ?? 0) > 0;
+    const rec = this.recommendation();
+    return (rec?.metadata?.similar_jobs?.length ?? 0) > 0;
   }
 
   getSimilarJobsCount(): number {
-    return this.recommendation?.metadata?.similar_jobs?.length ?? 0;
+    const rec = this.recommendation();
+    return rec?.metadata?.similar_jobs?.length ?? 0;
   }
 
   getSimilarJobs(): Array<{ app_id: string; similarity: number }> {
-    return (this.recommendation?.metadata?.similar_jobs ?? []).slice(0, 5);
+    const rec = this.recommendation();
+    return (rec?.metadata?.similar_jobs ?? []).slice(0, 5);
   }
 }
