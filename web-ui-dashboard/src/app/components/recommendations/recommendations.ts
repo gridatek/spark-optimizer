@@ -414,8 +414,10 @@ export class Recommendations {
 
     this.apiService.getRecommendation(apiRequest).subscribe({
       next: (response) => {
+        console.log('Received recommendation response:', response);
         this.recommendation = response;
         this.loading = false;
+        console.log('Updated component state - loading:', this.loading, 'recommendation:', this.recommendation);
       },
       error: (err) => {
         this.error = 'Failed to get recommendation. Please try again.';
