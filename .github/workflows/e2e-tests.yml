@@ -1,0 +1,305 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, feature/**]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    name: E2E Tests (Frontend + Backend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install frontend dependencies
+        working-directory: web-ui-dashboard
+        run: pnpm install
+
+      - name: Build frontend
+        working-directory: web-ui-dashboard
+        run: pnpm build
+
+      - name: Install Playwright browsers
+        working-directory: web-ui-dashboard
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Create test database
+        run: |
+          mkdir -p data
+          python -c "
+          from spark_optimizer.storage.database import Database
+          db = Database('sqlite:///data/test_spark_optimizer.db')
+          db.create_tables()
+          print('Test database created successfully')
+          "
+
+      - name: Seed test data
+        run: |
+          python -c "
+          from spark_optimizer.storage.database import Database
+          from datetime import datetime, timedelta
+          import random
+
+          db = Database('sqlite:///data/test_spark_optimizer.db')
+
+          # Create sample jobs for testing
+          for i in range(20):
+              job_data = {
+                  'app_id': f'app-test-{i:03d}',
+                  'app_name': f'TestJob{i}',
+                  'user': 'test_user',
+                  'submit_time': (datetime.now() - timedelta(days=i)).isoformat(),
+                  'start_time': (datetime.now() - timedelta(days=i, hours=1)).isoformat(),
+                  'end_time': (datetime.now() - timedelta(days=i, hours=1, minutes=30)).isoformat(),
+                  'duration_ms': random.randint(300000, 3600000),
+                  'status': random.choice(['completed', 'completed', 'completed', 'failed']),
+                  'spark_version': '3.5.0',
+                  'configuration': {
+                      'executor_cores': random.choice([2, 4, 8]),
+                      'executor_memory_mb': random.choice([4096, 8192, 16384]),
+                      'num_executors': random.choice([5, 10, 20]),
+                      'driver_memory_mb': random.choice([2048, 4096, 8192])
+                  },
+                  'metrics': {
+                      'total_tasks': random.randint(100, 1000),
+                      'failed_tasks': random.randint(0, 10),
+                      'total_stages': random.randint(10, 50),
+                      'failed_stages': 0,
+                      'input_bytes': random.randint(1000000000, 100000000000),
+                      'output_bytes': random.randint(1000000000, 50000000000),
+                      'shuffle_read_bytes': random.randint(100000000, 10000000000),
+                      'shuffle_write_bytes': random.randint(100000000, 10000000000)
+                  }
+              }
+              db.store_job(job_data)
+
+          print(f'Seeded {20} test jobs')
+          "
+
+      - name: Start backend server
+        run: |
+          export DATABASE_URL=sqlite:///data/test_spark_optimizer.db
+          python -m spark_optimizer.api.server &
+          BACKEND_PID=$!
+          echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+
+          # Wait for backend to be ready
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/health > /dev/null; then
+              echo "Backend server is ready!"
+              break
+            fi
+            echo "Waiting for backend server... ($i/30)"
+            sleep 2
+          done
+
+          if ! curl -s http://localhost:8080/health > /dev/null; then
+            echo "Backend server failed to start"
+            exit 1
+          fi
+
+      - name: Run E2E tests
+        working-directory: web-ui-dashboard
+        env:
+          CI: true
+        run: pnpm exec playwright test --project=${{ matrix.browser }} --reporter=html
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: web-ui-dashboard/playwright-report/
+          retention-days: 7
+
+      - name: Upload test videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-videos-${{ matrix.browser }}
+          path: web-ui-dashboard/test-results/
+          retention-days: 7
+
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ ! -z "$BACKEND_PID" ]; then
+            kill $BACKEND_PID || true
+          fi
+          # Also kill any remaining Python processes on port 8080
+          lsof -ti:8080 | xargs kill -9 || true
+
+  e2e-tests-mobile:
+    name: E2E Tests (Mobile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        device: ['Mobile Chrome', 'Mobile Safari']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install frontend dependencies
+        working-directory: web-ui-dashboard
+        run: pnpm install
+
+      - name: Install Playwright browsers
+        working-directory: web-ui-dashboard
+        run: pnpm exec playwright install --with-deps chromium webkit
+
+      - name: Create test database
+        run: |
+          mkdir -p data
+          python -c "
+          from spark_optimizer.storage.database import Database
+          db = Database('sqlite:///data/test_spark_optimizer.db')
+          db.create_tables()
+          "
+
+      - name: Seed test data
+        run: |
+          python -c "
+          from spark_optimizer.storage.database import Database
+          from datetime import datetime, timedelta
+          import random
+
+          db = Database('sqlite:///data/test_spark_optimizer.db')
+
+          for i in range(20):
+              job_data = {
+                  'app_id': f'app-test-{i:03d}',
+                  'app_name': f'TestJob{i}',
+                  'user': 'test_user',
+                  'submit_time': (datetime.now() - timedelta(days=i)).isoformat(),
+                  'start_time': (datetime.now() - timedelta(days=i, hours=1)).isoformat(),
+                  'end_time': (datetime.now() - timedelta(days=i, hours=1, minutes=30)).isoformat(),
+                  'duration_ms': random.randint(300000, 3600000),
+                  'status': random.choice(['completed', 'completed', 'completed', 'failed']),
+                  'spark_version': '3.5.0',
+                  'configuration': {
+                      'executor_cores': random.choice([2, 4, 8]),
+                      'executor_memory_mb': random.choice([4096, 8192, 16384]),
+                      'num_executors': random.choice([5, 10, 20]),
+                      'driver_memory_mb': random.choice([2048, 4096, 8192])
+                  },
+                  'metrics': {
+                      'total_tasks': random.randint(100, 1000),
+                      'failed_tasks': random.randint(0, 10),
+                      'total_stages': random.randint(10, 50),
+                      'failed_stages': 0,
+                      'input_bytes': random.randint(1000000000, 100000000000),
+                      'output_bytes': random.randint(1000000000, 50000000000),
+                      'shuffle_read_bytes': random.randint(100000000, 10000000000),
+                      'shuffle_write_bytes': random.randint(100000000, 10000000000)
+                  }
+              }
+              db.store_job(job_data)
+          "
+
+      - name: Start backend server
+        run: |
+          export DATABASE_URL=sqlite:///data/test_spark_optimizer.db
+          python -m spark_optimizer.api.server &
+          BACKEND_PID=$!
+          echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/health > /dev/null; then
+              echo "Backend server is ready!"
+              break
+            fi
+            echo "Waiting for backend server... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run E2E tests (Mobile)
+        working-directory: web-ui-dashboard
+        env:
+          CI: true
+        run: pnpm exec playwright test --project="${{ matrix.device }}" --reporter=html
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-mobile-${{ matrix.device }}
+          path: web-ui-dashboard/playwright-report/
+          retention-days: 7
+
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ ! -z "$BACKEND_PID" ]; then
+            kill $BACKEND_PID || true
+          fi
+          lsof -ti:8080 | xargs kill -9 || true
