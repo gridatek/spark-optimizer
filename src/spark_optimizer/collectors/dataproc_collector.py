@@ -455,9 +455,7 @@ class DataprocCollector(BaseCollector):
             print(f"Error converting job to metrics: {e}")
             return None
 
-    def _calculate_job_cost(
-        self, cluster_details: Dict, duration_ms: int
-    ) -> float:
+    def _calculate_job_cost(self, cluster_details: Dict, duration_ms: int) -> float:
         """Calculate job cost based on cluster configuration and duration.
 
         Args:
@@ -477,32 +475,22 @@ class DataprocCollector(BaseCollector):
         master_config = cluster_details.get("master_config", {})
         master_type = master_config.get("machine_type", "n1-standard-4")
         master_count = master_config.get("num_instances", 1)
-        master_specs = self.MACHINE_TYPES.get(
-            master_type, {"price": 0.19}
-        )
-        total_cost += (
-            master_count * master_specs["price"] * duration_hours
-        )
+        master_specs = self.MACHINE_TYPES.get(master_type, {"price": 0.19})
+        total_cost += master_count * master_specs["price"] * duration_hours
 
         # Worker node cost
         worker_config = cluster_details.get("worker_config", {})
         worker_type = worker_config.get("machine_type", "n1-standard-4")
         worker_count = worker_config.get("num_instances", 2)
-        worker_specs = self.MACHINE_TYPES.get(
-            worker_type, {"price": 0.19}
-        )
-        total_cost += (
-            worker_count * worker_specs["price"] * duration_hours
-        )
+        worker_specs = self.MACHINE_TYPES.get(worker_type, {"price": 0.19})
+        total_cost += worker_count * worker_specs["price"] * duration_hours
 
         # Preemptible worker cost (if enabled and exists)
         if self.include_preemptible and "preemptible_worker_config" in cluster_details:
             preempt_config = cluster_details["preemptible_worker_config"]
             preempt_type = preempt_config.get("machine_type", "n1-standard-4")
             preempt_count = preempt_config.get("num_instances", 0)
-            preempt_specs = self.MACHINE_TYPES.get(
-                preempt_type, {"price": 0.19}
-            )
+            preempt_specs = self.MACHINE_TYPES.get(preempt_type, {"price": 0.19})
             preempt_cost = (
                 preempt_count
                 * preempt_specs["price"]
@@ -538,9 +526,10 @@ class DataprocCollector(BaseCollector):
         recommended_type = current_machine_type
         reason = "Current configuration is appropriate"
 
-        if workload_profile.get("memory_intensive") or workload_profile.get(
-            "job_type"
-        ) == "ml":
+        if (
+            workload_profile.get("memory_intensive")
+            or workload_profile.get("job_type") == "ml"
+        ):
             # Recommend high-memory instances
             if "highmem" not in current_machine_type:
                 cores = current_specs["cores"]
@@ -552,9 +541,9 @@ class DataprocCollector(BaseCollector):
                     recommended_type = "n2-highmem-16"
                 reason = "Memory-intensive workload benefits from high-memory instances"
 
-        elif workload_profile.get(
-            "compute_intensive"
-        ) or workload_profile.get("job_type") in ["streaming", "realtime"]:
+        elif workload_profile.get("compute_intensive") or workload_profile.get(
+            "job_type"
+        ) in ["streaming", "realtime"]:
             # Recommend compute-optimized instances
             if not current_machine_type.startswith("c2-"):
                 cores = current_specs["cores"]
@@ -566,9 +555,10 @@ class DataprocCollector(BaseCollector):
                     recommended_type = "c2-standard-16"
                 reason = "Compute-intensive workload benefits from C2 instances"
 
-        elif workload_profile.get("cost_optimized") or workload_profile.get(
-            "job_type"
-        ) == "batch":
+        elif (
+            workload_profile.get("cost_optimized")
+            or workload_profile.get("job_type") == "batch"
+        ):
             # Recommend E2 cost-optimized instances
             if not current_machine_type.startswith("e2-"):
                 cores = current_specs["cores"]
@@ -593,16 +583,11 @@ class DataprocCollector(BaseCollector):
                 reason = "ETL/SQL workload benefits from balanced N2 instances"
 
         # Calculate cost impact
-        recommended_specs = self.MACHINE_TYPES.get(
-            recommended_type, current_specs
-        )
+        recommended_specs = self.MACHINE_TYPES.get(recommended_type, current_specs)
         cost_change_percent = (
-            (
-                (recommended_specs["price"] - current_specs["price"])
-                / current_specs["price"]
-            )
-            * 100
-        )
+            (recommended_specs["price"] - current_specs["price"])
+            / current_specs["price"]
+        ) * 100
 
         # Determine if preemptible workers are recommended
         preemptible_recommended = workload_profile.get("job_type") in [

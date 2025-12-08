@@ -79,9 +79,7 @@ class TestDataprocCollector:
             "spark_optimizer.collectors.dataproc_collector.GOOGLE_CLOUD_AVAILABLE",
             False,
         ):
-            with pytest.raises(
-                ImportError, match="google-cloud-dataproc is required"
-            ):
+            with pytest.raises(ImportError, match="google-cloud-dataproc is required"):
                 DataprocCollector(project_id="test-project")
 
     @patch(
@@ -101,9 +99,7 @@ class TestDataprocCollector:
         mock_client_instance.list_clusters.return_value = iter([])
         mock_cluster_client.return_value = mock_client_instance
 
-        collector = DataprocCollector(
-            project_id="test-project", region="us-central1"
-        )
+        collector = DataprocCollector(project_id="test-project", region="us-central1")
         result = collector.validate_config()
 
         assert result is True
@@ -128,9 +124,7 @@ class TestDataprocCollector:
         )
         mock_cluster_client.return_value = mock_client_instance
 
-        collector = DataprocCollector(
-            project_id="test-project", region="us-central1"
-        )
+        collector = DataprocCollector(project_id="test-project", region="us-central1")
         result = collector.validate_config()
 
         assert result is False
@@ -219,9 +213,7 @@ class TestDataprocCollector:
         mock_client_instance.get_cluster.return_value = mock_cluster
         mock_cluster_client.return_value = mock_client_instance
 
-        collector = DataprocCollector(
-            project_id="test-project", region="us-central1"
-        )
+        collector = DataprocCollector(project_id="test-project", region="us-central1")
         details = collector._get_cluster_details("test-cluster")
 
         assert details["cluster_name"] == "test-cluster"
@@ -266,16 +258,12 @@ class TestDataprocCollector:
 
         # Set status
         timestamp_start = Timestamp()
-        timestamp_start.FromDatetime(
-            datetime.now() - timedelta(hours=1)
-        )
+        timestamp_start.FromDatetime(datetime.now() - timedelta(hours=1))
         mock_job.status.state_start_time = timestamp_start
         mock_job.status.state = dataproc_v1.JobStatus.State.DONE
         mock_job.status.details = "user@example.com"
 
-        collector = DataprocCollector(
-            project_id="test-project", region="us-central1"
-        )
+        collector = DataprocCollector(project_id="test-project", region="us-central1")
         metrics = collector._convert_job_to_metrics(
             "test-cluster", cluster_details, mock_job
         )
@@ -313,9 +301,7 @@ class TestDataprocCollector:
             },
         }
 
-        collector = DataprocCollector(
-            project_id="test-project", region="us-central1"
-        )
+        collector = DataprocCollector(project_id="test-project", region="us-central1")
 
         # 1 hour = 3,600,000 ms
         cost = collector._calculate_job_cost(cluster_details, 3600000)
