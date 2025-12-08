@@ -3,15 +3,16 @@
 import pytest
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, MagicMock
-from google.protobuf.timestamp_pb2 import Timestamp
 
 try:
     from google.cloud import dataproc_v1
     from google.api_core import exceptions as google_exceptions
+    from google.protobuf.timestamp_pb2 import Timestamp
 
     GOOGLE_CLOUD_AVAILABLE = True
 except ImportError:
     GOOGLE_CLOUD_AVAILABLE = False
+    Timestamp = None  # type: ignore
 
 if GOOGLE_CLOUD_AVAILABLE:
     from spark_optimizer.collectors.dataproc_collector import DataprocCollector
