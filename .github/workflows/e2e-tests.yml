@@ -55,6 +55,12 @@ jobs:
         working-directory: web-ui-dashboard
         run: pnpm install
 
+      - name: Generate frontend config
+        working-directory: web-ui-dashboard/src
+        run: |
+          echo '{"apiUrl": "http://localhost:8080"}' > config.json
+          cat config.json
+
       - name: Build frontend
         working-directory: web-ui-dashboard
         run: pnpm build
@@ -138,12 +144,6 @@ jobs:
             echo "Backend server failed to start"
             exit 1
           fi
-
-      - name: Generate frontend config
-        working-directory: web-ui-dashboard/src
-        run: |
-          echo '{"apiUrl": "http://localhost:8080"}' > config.json
-          cat config.json
 
       - name: Run E2E tests
         working-directory: web-ui-dashboard
