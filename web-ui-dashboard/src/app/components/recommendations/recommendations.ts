@@ -322,10 +322,17 @@ import {
   `
 })
 export class Recommendations {
-  request: RecommendationRequest = {
+  // Form model (user-friendly with GB)
+  formData = {
     input_size_gb: 10,
-    job_type: 'etl'
+    job_type: 'etl' as 'etl' | 'ml' | 'sql' | 'streaming',
+    app_name: '',
+    priority: 'balanced' as 'performance' | 'cost' | 'balanced'
   };
+
+  // For backward compatibility
+  get request() { return this.formData; }
+  set request(val: any) { Object.assign(this.formData, val); }
 
   recommendation: RecommendationResponse | null = null;
   loading = false;
@@ -388,7 +395,7 @@ export class Recommendations {
   constructor(private apiService: ApiService) {}
 
   getRecommendation(): void {
-    if (!this.request.input_size_gb || this.request.input_size_gb <= 0) {
+    if (!this.formData.input_size_gb || this.formData.input_size_gb <= 0) {
       this.error = 'Please enter a valid input size';
       return;
     }
@@ -397,7 +404,15 @@ export class Recommendations {
     this.error = null;
     this.recommendation = null;
 
-    this.apiService.getRecommendation(this.request).subscribe({
+    // Convert GB to bytes for API request
+    const apiRequest: RecommendationRequest = {
+      input_size_bytes: this.formData.input_size_gb * 1024 * 1024 * 1024,
+      job_type: this.formData.job_type,
+      app_name: this.formData.app_name || undefined,
+      priority: this.formData.priority
+    };
+
+    this.apiService.getRecommendation(apiRequest).subscribe({
       next: (response) => {
         this.recommendation = response;
         this.loading = false;
@@ -421,9 +436,11 @@ export class Recommendations {
   }
 
   reset(): void {
-    this.request = {
+    this.formData = {
       input_size_gb: 10,
-      job_type: 'etl'
+      job_type: 'etl',
+      app_name: '',
+      priority: 'balanced'
     };
     this.recommendation = null;
     this.error = null;
