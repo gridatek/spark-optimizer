@@ -7,19 +7,22 @@ import {
   RecommendationResponse,
   JobAnalysis
 } from '../models/recommendation.model';
-import config from '../../config.json';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = config.apiUrl;
+  private apiUrl = 'http://localhost:8080'; // TODO: Load from config.json
 
   constructor(private http: HttpClient) {}
 
+  private getApiUrl(): string {
+    return this.apiUrl;
+  }
+
   // Health Check
   healthCheck(): Observable<{ status: string; service: string }> {
-    return this.http.get<{ status: string; service: string }>(`${this.apiUrl}/health`);
+    return this.http.get<{ status: string; service: string }>(`${this.getApiUrl()}/health`);
   }
 
   // Jobs
@@ -41,20 +44,23 @@ export class ApiService {
         }
       });
     }
-    return this.http.get<JobListResponse>(`${this.apiUrl}/jobs`, { params: httpParams });
+    return this.http.get<JobListResponse>(`${this.getApiUrl()}/api/v1/jobs`, { params: httpParams });
   }
 
   getJobDetails(appId: string): Observable<SparkJob> {
-    return this.http.get<SparkJob>(`${this.apiUrl}/jobs/${appId}`);
+    return this.http.get<SparkJob>(`${this.getApiUrl()}/api/v1/jobs/${appId}`);
   }
 
   analyzeJob(appId: string): Observable<JobAnalysis> {
-    return this.http.get<JobAnalysis>(`${this.apiUrl}/analyze/${appId}`);
+    return this.http.get<JobAnalysis>(`${this.getApiUrl()}/api/v1/jobs/${appId}/analyze`);
   }
 
   // Recommendations
   getRecommendation(request: RecommendationRequest): Observable<RecommendationResponse> {
-    return this.http.post<RecommendationResponse>(`${this.apiUrl}/recommend`, request);
+    const url = `${this.getApiUrl()}/api/v1/recommend`;
+    console.log('Making recommendation request to:', url);
+    console.log('Request payload:', request);
+    return this.http.post<RecommendationResponse>(url, request);
   }
 
   // Feedback
@@ -64,7 +70,7 @@ export class ApiService {
     satisfaction_score?: number;
     comments?: string;
   }): Observable<{ status: string; message: string }> {
-    return this.http.post<{ status: string; message: string }>(`${this.apiUrl}/feedback`, data);
+    return this.http.post<{ status: string; message: string }>(`${this.getApiUrl()}/api/v1/feedback`, data);
   }
 
   // Collection
@@ -78,6 +84,6 @@ export class ApiService {
     jobs_stored: number;
     errors: number;
   }> {
-    return this.http.post<any>(`${this.apiUrl}/collect`, data);
+    return this.http.post<any>(`${this.getApiUrl()}/api/v1/collect`, data);
   }
 }

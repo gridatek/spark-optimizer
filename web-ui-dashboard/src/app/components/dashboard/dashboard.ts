@@ -1,7 +1,9 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { SparkJob } from '../../models/job.model';
+import { interval, Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -9,9 +11,24 @@ import { SparkJob } from '../../models/job.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="p-8 max-w-7xl mx-auto">
-      <header class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Spark Resource Optimizer Dashboard</h1>
-        <p class="text-gray-600">Monitor and optimize your Spark job configurations</p>
+      <header class="mb-8 flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Spark Resource Optimizer Dashboard</h1>
+          <p class="text-gray-600">Monitor and optimize your Spark job configurations</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <button
+            (click)="toggleAutoRefresh()"
+            [class]="'px-4 py-2 rounded-md font-medium transition-colors ' + (autoRefreshEnabled() ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')"
+          >
+            {{ autoRefreshEnabled() ? '🔄 Auto-Refresh ON' : '⏸️ Auto-Refresh OFF' }}
+          </button>
+          @if (lastUpdated()) {
+            <span class="text-sm text-gray-500">
+              Last updated: {{ lastUpdated() | date:'short' }}
+            </span>
+          }
+        </div>
       </header>
 
       <!-- Loading State -->
@@ -161,7 +178,7 @@ import { SparkJob } from '../../models/job.model';
     </div>
   `
 })
-export class Dashboard implements OnInit {
+export class Dashboard implements OnInit, OnDestroy {
   recentJobs: SparkJob[] = [];
   totalJobs = 0;
   loading = false;
@@ -175,10 +192,21 @@ export class Dashboard implements OnInit {
     avgDuration: 0
   };
 
+  // Real-time monitoring
+  autoRefreshEnabled = signal(true);
+  lastUpdated = signal<Date | null>(null);
+  private refreshSubscription?: Subscription;
+  private readonly REFRESH_INTERVAL = 30000; // 30 seconds
+
   constructor(private apiService: ApiService) {}
 
   ngOnInit(): void {
     this.loadDashboardData();
+    this.startAutoRefresh();
+  }
+
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
   }
 
   loadDashboardData(): void {
@@ -190,6 +218,7 @@ export class Dashboard implements OnInit {
         this.recentJobs = response.jobs;
         this.totalJobs = response.total;
         this.calculateStats();
+        this.lastUpdated.set(new Date());
         this.loading = false;
       },
       error: (err) => {
@@ -198,6 +227,46 @@ export class Dashboard implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  toggleAutoRefresh(): void {
+    this.autoRefreshEnabled.update(enabled => !enabled);
+    if (this.autoRefreshEnabled()) {
+      this.startAutoRefresh();
+    } else {
+      this.stopAutoRefresh();
+    }
+  }
+
+  private startAutoRefresh(): void {
+    if (this.refreshSubscription) {
+      return; // Already running
+    }
+
+    this.refreshSubscription = interval(this.REFRESH_INTERVAL)
+      .pipe(
+        switchMap(() => this.apiService.getJobs({ limit: 10 }))
+      )
+      .subscribe({
+        next: (response) => {
+          if (this.autoRefreshEnabled()) {
+            this.recentJobs = response.jobs;
+            this.totalJobs = response.total;
+            this.calculateStats();
+            this.lastUpdated.set(new Date());
+          }
+        },
+        error: (err) => {
+          console.error('Auto-refresh error:', err);
+        }
+      });
+  }
+
+  private stopAutoRefresh(): void {
+    if (this.refreshSubscription) {
+      this.refreshSubscription.unsubscribe();
+      this.refreshSubscription = undefined;
+    }
   }
 
   calculateStats(): void {
@@ -214,7 +283,7 @@ export class Dashboard implements OnInit {
       : 0;
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status: string | undefined): string {
     if (status === 'completed') return 'bg-green-200 text-green-900';
     if (status === 'failed') return 'bg-red-200 text-red-900';
     if (status === 'running') return 'bg-blue-200 text-blue-900';

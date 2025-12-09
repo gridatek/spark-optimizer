@@ -1,8 +1,8 @@
 export interface RecommendationRequest {
-  input_size_gb: number;
+  input_size_bytes: number;
   job_type?: 'etl' | 'ml' | 'sql' | 'streaming';
   app_name?: string;
-  method?: 'similarity' | 'ml' | 'rule_based' | 'hybrid';
+  priority?: 'performance' | 'cost' | 'balanced';
   additional_params?: Record<string, any>;
 }
 
