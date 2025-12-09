@@ -1,4 +1,4 @@
-# Local Testing Guide
+# Testing Guide
 
 This guide shows you how to test the Spark Resource Optimizer project locally.
 
@@ -28,7 +28,7 @@ Initialize the SQLite database:
 
 ```bash
 # Create database and tables
-python -c "from spark_optimizer.storage.database import Database; db = Database('sqlite:///spark_optimizer.db'); db.create_tables(); print('✓ Database created')"
+python -c "from spark_optimizer.storage.database import Database; db = Database('sqlite:///spark_optimizer.db'); db.create_tables(); print('Database created')"
 ```
 
 Check if database was created:
@@ -36,18 +36,52 @@ Check if database was created:
 ls -lh spark_optimizer.db
 ```
 
-## 3. Testing What Currently Works
+## 3. Running Unit Tests
+
+The project has comprehensive unit tests covering all major components:
+
+```bash
+# Install test dependencies
+pip install pytest pytest-cov pytest-mock
+
+# Run all tests
+pytest tests/ -v
+
+# Run specific test modules
+pytest tests/test_api/test_routes.py -v
+pytest tests/test_storage/test_repository.py -v
+pytest tests/test_collectors/test_event_log_collector.py -v
+pytest tests/test_analyzer/test_similarity.py -v
+
+# Run with coverage
+pytest tests/ --cov=spark_optimizer --cov-report=html
+
+# View coverage report
+open htmlcov/index.html
+```
+
+### Test Categories
+
+| Test Module | Description | Tests |
+|-------------|-------------|-------|
+| `test_api/test_routes.py` | API endpoint tests | Health check, recommendations, job listing, analysis |
+| `test_api/test_server.py` | Server integration tests | Full API workflow tests |
+| `test_storage/test_repository.py` | Repository pattern tests | CRUD operations, search, filtering |
+| `test_collectors/test_event_log_collector.py` | Event log parsing tests | Log parsing, metrics extraction |
+| `test_analyzer/test_similarity.py` | Similarity calculation tests | Job matching, vector similarity |
+| `test_recommender/*.py` | Recommender tests | All recommendation methods |
+
+## 4. Testing What Currently Works
 
 ### A. Test Event Log Collection
 
-The event log collector is **functional** and can parse Spark event logs. To test it:
+The event log collector is **fully functional** and can parse Spark event logs:
 
 ```bash
 # Create sample event log directory
 mkdir -p sample_event_logs
 
 # Test the collector (requires actual Spark event logs)
-# If you have Spark event logs, copy them to sample_event_logs/
 spark-optimizer collect --event-log-dir ./sample_event_logs --db-url sqlite:///spark_optimizer.db
 ```
 
@@ -57,7 +91,7 @@ spark-optimizer collect --event-log-dir ./sample_event_logs --db-url sqlite:///s
 
 ### B. Test History Server Collection
 
-The History Server collector is **functional** and can fetch job metrics via the Spark History Server REST API:
+The History Server collector is **fully functional** and can fetch job metrics via REST API:
 
 ```bash
 # Test with a running History Server
@@ -71,52 +105,12 @@ spark-optimizer collect-from-history-server \
   --history-server-url http://localhost:18080 \
   --status completed \
   --max-apps 100
-
-# Collect with custom timeout
-spark-optimizer collect-from-history-server \
-  --history-server-url http://localhost:18080 \
-  --timeout 60
 ```
 
-**Note**: You'll need a running Spark History Server. To start one:
-```bash
-# Assuming you have Spark installed
-$SPARK_HOME/sbin/start-history-server.sh
-
-# Or with Docker
-docker run -p 18080:18080 \
-  -v /path/to/spark/logs:/tmp/spark-events \
-  apache/spark:latest \
-  /opt/spark/sbin/start-history-server.sh
-```
-
-**Expected behavior**:
-- The collector will connect to the History Server
-- Fetch application metadata via REST API
-- Parse executor metrics and configuration
-- Store normalized data in the database
-
-### C. Test Database Operations
+### C. Test Recommendations
 
 ```bash
-# View database statistics
-spark-optimizer stats --db-url sqlite:///spark_optimizer.db
-
-# List jobs in database
-spark-optimizer list-jobs --db-url sqlite:///spark_optimizer.db --limit 10
-```
-
-### D. Test Job Analysis (if you have data)
-
-```bash
-# Analyze a specific job (requires job data in DB)
-spark-optimizer analyze --app-id <your-app-id> --db-url sqlite:///spark_optimizer.db
-```
-
-### E. Test Recommendations
-
-```bash
-# Get recommendations
+# Get recommendations using similarity-based method
 spark-optimizer recommend \
   --input-size 10GB \
   --job-type etl \
@@ -125,9 +119,14 @@ spark-optimizer recommend \
   --format table
 ```
 
-**Expected behavior**: Returns recommendations using similarity-based matching if historical data exists, otherwise uses smart fallback heuristics.
+### D. Test Job Analysis
 
-### F. Test API Server
+```bash
+# Analyze a specific job
+spark-optimizer analyze --app-id <your-app-id> --db-url sqlite:///spark_optimizer.db
+```
+
+### E. Test API Server
 
 Start the REST API server:
 
@@ -142,19 +141,41 @@ In another terminal, test the API:
 # Health check
 curl http://localhost:8080/health
 
-# Get recommendations (API endpoint has TODOs)
-curl -X POST http://localhost:8080/api/v1/recommendations \
+# Get recommendations
+curl -X POST http://localhost:8080/api/v1/recommend \
   -H "Content-Type: application/json" \
   -d '{
-    "input_size_gb": 10,
-    "job_type": "etl"
+    "input_size_bytes": 10737418240,
+    "job_type": "etl",
+    "priority": "balanced"
   }'
 
 # List jobs
 curl http://localhost:8080/api/v1/jobs
+
+# Get job details
+curl http://localhost:8080/api/v1/jobs/<app_id>
+
+# Analyze a job
+curl http://localhost:8080/api/v1/jobs/<app_id>/analyze
+
+# Get statistics
+curl http://localhost:8080/api/v1/stats
 ```
 
-## 4. Testing with Python Code
+## 5. Running Example Scripts
+
+The project includes working example scripts:
+
+```bash
+# Basic usage example
+python examples/basic_usage.py
+
+# Advanced tuning example (compares multiple recommenders)
+python examples/advanced_tuning.py
+```
+
+## 6. Testing with Python Code
 
 Test the modules directly:
 
@@ -166,24 +187,19 @@ from spark_optimizer.recommender.similarity_recommender import SimilarityRecomme
 # Test database
 db = Database("sqlite:///test.db")
 db.create_tables()
-print("✓ Database works")
+print("Database works")
 
-# Test recommender (uses fallback)
+# Test recommender
 recommender = SimilarityRecommender(db)
 rec = recommender.recommend(
     input_size_bytes=10 * 1024**3,  # 10GB
     job_type="etl",
     priority="balanced"
 )
-print(f"✓ Recommender works (using fallback): {rec}")
+print(f"Recommender works: {rec}")
 ```
 
-Run it:
-```bash
-python test_basic.py
-```
-
-## 5. Testing Web UI Dashboard (Separate Project)
+## 7. Web UI Dashboard
 
 The Angular dashboard is in `web-ui-dashboard/`:
 
@@ -199,27 +215,7 @@ ng serve
 # Open browser to http://localhost:4200
 ```
 
-## 6. Running Unit Tests
-
-Most tests are stubs (TODO), but you can run them:
-
-```bash
-# Install test dependencies
-pip install pytest pytest-cov pytest-mock
-
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=spark_optimizer --cov-report=html
-
-# View coverage report
-open htmlcov/index.html
-```
-
-**Expected**: Most tests will pass but are empty placeholders.
-
-## 7. Docker Testing (Optional)
+## 8. Docker Testing (Optional)
 
 If you have Docker:
 
@@ -230,29 +226,36 @@ docker-compose up
 # Access API at http://localhost:8080
 ```
 
-## What Works vs. What Doesn't
+## Implementation Status
 
-### ✅ Currently Working:
-- CLI interface and command structure
-- Event log parsing (EventLogCollector)
-- **History Server REST API integration (HistoryServerCollector)** ✨ NEW
-- **Similarity-based recommendation engine** ✨ NEW
-- Database schema and storage
-- API server framework
-- Smart fallback recommendation logic
-- Job analysis CLI command
-- **Comprehensive unit tests for collectors and recommenders** ✨ NEW
+### Fully Implemented
 
-### ⚠️ Partially Working:
-- API endpoints (framework works, business logic has TODOs)
+| Component | Status | Description |
+|-----------|--------|-------------|
+| CLI Interface | Complete | All commands working |
+| Event Log Collector | Complete | Parses Spark event logs |
+| History Server Collector | Complete | REST API integration |
+| EMR Collector | Complete | AWS EMR integration |
+| Databricks Collector | Complete | Databricks integration |
+| Dataproc Collector | Complete | GCP Dataproc integration |
+| Similarity Recommender | Complete | Historical job matching |
+| Rule-based Recommender | Complete | Heuristic optimization |
+| ML Recommender | Complete | Random Forest/Gradient Boosting |
+| Job Analyzer | Complete | Bottleneck detection, health scoring |
+| Feature Extractor | Complete | ML feature engineering |
+| Rule Engine | Complete | Rule-based optimization |
+| Database/Storage | Complete | SQLAlchemy ORM, Repository pattern |
+| REST API | Complete | All endpoints functional |
+| Unit Tests | Complete | Comprehensive test coverage |
+| Example Scripts | Complete | Working examples |
 
-### ❌ Not Yet Implemented:
-- ML-based predictions
-- Rule-based optimization
-- Cloud provider integrations (AWS EMR, Databricks, GCP Dataproc)
-- Real-time monitoring
-- Auto-tuning
-- Advanced feature extraction and analysis algorithms
+### Planned Features
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Real-time Monitoring | Planned | Streaming job metrics |
+| Auto-tuning | Planned | Automatic configuration adjustment |
+| Advanced Cost Modeling | Planned | Cloud provider cost integration |
 
 ## Quick Smoke Test
 
@@ -263,12 +266,15 @@ Run this to verify everything is set up correctly:
 spark-optimizer --version
 
 # 2. Create database
-python -c "from spark_optimizer.storage.database import Database; Database('sqlite:///test.db').create_tables(); print('✓ DB OK')"
+python -c "from spark_optimizer.storage.database import Database; Database('sqlite:///test.db').create_tables(); print('DB OK')"
 
-# 3. Test import
-python -c "from spark_optimizer.recommender.similarity_recommender import SimilarityRecommender; print('✓ Import OK')"
+# 3. Test imports
+python -c "from spark_optimizer.recommender.similarity_recommender import SimilarityRecommender; print('Import OK')"
 
-# 4. Start server (Ctrl+C to stop)
+# 4. Run tests
+pytest tests/ -v --tb=short
+
+# 5. Start server (Ctrl+C to stop)
 # spark-optimizer serve --port 8080
 ```
 
@@ -281,13 +287,17 @@ python -c "from spark_optimizer.recommender.similarity_recommender import Simila
 **Solution**: Run database creation step from section 2
 
 **Issue**: No event logs to test with
-**Solution**: Generate sample Spark event logs or use the fallback recommendation testing
+**Solution**: Use the example scripts which create sample data, or point to real Spark event logs
 
-## Next Steps for Development
+**Issue**: Tests failing with import errors
+**Solution**: Ensure you're in the project root and have the virtual environment activated
 
-To make this project fully functional, implement:
-1. `similarity_recommender.py` - core similarity matching logic
-2. `ml_recommender.py` - ML model training and prediction
-3. Unit tests in `tests/` directory
-4. Cloud collectors for AWS/Databricks/GCP
-5. Web UI components in `web-ui-dashboard/`
+## Test Coverage Goals
+
+| Module | Target Coverage |
+|--------|-----------------|
+| API Routes | 80%+ |
+| Repository | 90%+ |
+| Collectors | 85%+ |
+| Recommenders | 85%+ |
+| Analyzers | 80%+ |
