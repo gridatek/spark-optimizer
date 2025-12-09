@@ -7,17 +7,19 @@ import {
   RecommendationResponse,
   JobAnalysis
 } from '../models/recommendation.model';
+import { ConfigService } from './config.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:8080'; // TODO: Load from config.json
-
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private configService: ConfigService
+  ) {}
 
   private getApiUrl(): string {
-    return this.apiUrl;
+    return this.configService.apiUrl;
   }
 
   // Health Check
