@@ -14,6 +14,17 @@ from spark_optimizer.recommender.rule_based_recommender import RuleBasedRecommen
 from spark_optimizer.collectors.history_server_collector import HistoryServerCollector
 from spark_optimizer.storage.models import SparkApplication
 
+# Import new route blueprints
+from spark_optimizer.api.routes import api_bp
+from spark_optimizer.api.monitoring_routes import (
+    monitoring_bp,
+    init_monitoring,
+    start_monitoring,
+    stop_monitoring,
+)
+from spark_optimizer.api.tuning_routes import tuning_bp, init_tuning
+from spark_optimizer.api.cost_routes import cost_bp, init_cost_modeling
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,17 +40,56 @@ recommender: Optional[SimilarityRecommender] = None
 rule_based_recommender: Optional[RuleBasedRecommender] = None
 
 
-def init_app(db_url: str = "sqlite:///spark_optimizer.db"):
+def init_app(
+    db_url: str = "sqlite:///spark_optimizer.db",
+    enable_monitoring: bool = True,
+    enable_tuning: bool = True,
+    enable_cost_modeling: bool = True,
+    metrics_endpoint: Optional[str] = None,
+    history_server_url: Optional[str] = None,
+    websocket_port: int = 8765,
+):
     """Initialize the application with database and recommender.
 
     Args:
         db_url: Database connection string
+        enable_monitoring: Whether to enable real-time monitoring
+        enable_tuning: Whether to enable auto-tuning
+        enable_cost_modeling: Whether to enable cost modeling
+        metrics_endpoint: Prometheus metrics endpoint for monitoring
+        history_server_url: Spark History Server URL for monitoring
+        websocket_port: WebSocket server port for real-time updates
     """
     global db, recommender, rule_based_recommender
     db = Database(db_url)
     db.create_tables()
     recommender = SimilarityRecommender(db=db)
     rule_based_recommender = RuleBasedRecommender()
+
+    # Register blueprints for new features
+    app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(monitoring_bp, url_prefix="/api/v1")
+    app.register_blueprint(tuning_bp, url_prefix="/api/v1")
+    app.register_blueprint(cost_bp, url_prefix="/api/v1")
+
+    # Initialize monitoring if enabled
+    if enable_monitoring:
+        init_monitoring(
+            metrics_endpoint=metrics_endpoint,
+            history_server_url=history_server_url,
+            websocket_port=websocket_port,
+        )
+        logger.info("Real-time monitoring initialized")
+
+    # Initialize tuning if enabled
+    if enable_tuning:
+        init_tuning()
+        logger.info("Auto-tuning initialized")
+
+    # Initialize cost modeling if enabled
+    if enable_cost_modeling:
+        init_cost_modeling()
+        logger.info("Cost modeling initialized")
 
 
 def _ensure_initialized() -> (
@@ -764,11 +814,55 @@ def run_server(
     port=8080,
     debug=False,
     db_url: str = "sqlite:///spark_optimizer.db",
+    enable_monitoring: bool = True,
+    enable_tuning: bool = True,
+    enable_cost_modeling: bool = True,
+    metrics_endpoint: Optional[str] = None,
+    history_server_url: Optional[str] = None,
+    websocket_port: int = 8765,
 ):
-    """Run the Flask server"""
-    init_app(db_url=db_url)
+    """Run the Flask server with all features.
+
+    Args:
+        host: Host to bind to
+        port: Port to listen on
+        debug: Enable debug mode
+        db_url: Database connection string
+        enable_monitoring: Enable real-time monitoring
+        enable_tuning: Enable auto-tuning capabilities
+        enable_cost_modeling: Enable advanced cost modeling
+        metrics_endpoint: Prometheus metrics endpoint for monitoring
+        history_server_url: Spark History Server URL for monitoring
+        websocket_port: WebSocket server port for real-time updates
+    """
+    init_app(
+        db_url=db_url,
+        enable_monitoring=enable_monitoring,
+        enable_tuning=enable_tuning,
+        enable_cost_modeling=enable_cost_modeling,
+        metrics_endpoint=metrics_endpoint,
+        history_server_url=history_server_url,
+        websocket_port=websocket_port,
+    )
+
+    # Start monitoring services if enabled
+    if enable_monitoring:
+        start_monitoring()
+        logger.info(f"Real-time monitoring started (WebSocket port: {websocket_port})")
+
     logger.info(f"Starting Spark Resource Optimizer API on {host}:{port}")
-    app.run(host=host, port=port, debug=debug)
+    logger.info("Available features:")
+    logger.info(f"  - Real-time monitoring: {'enabled' if enable_monitoring else 'disabled'}")
+    logger.info(f"  - Auto-tuning: {'enabled' if enable_tuning else 'disabled'}")
+    logger.info(f"  - Cost modeling: {'enabled' if enable_cost_modeling else 'disabled'}")
+
+    try:
+        app.run(host=host, port=port, debug=debug)
+    finally:
+        # Cleanup on shutdown
+        if enable_monitoring:
+            stop_monitoring()
+            logger.info("Monitoring services stopped")
 
 
 if __name__ == "__main__":

@@ -58,12 +58,6 @@ class SimilarityRecommender(BaseRecommender):
             "priority": priority,
         }
 
-        # TODO: Implement similarity-based recommendation
-        # 1. Find similar jobs from history
-        # 2. Analyze their resource usage
-        # 3. Recommend based on successful configurations
-        # 4. Adjust for differences in scale
-
         # Load historical jobs from database if available and not loaded yet
         if not self.historical_jobs and self.db:
             self.load_historical_jobs_from_db()
