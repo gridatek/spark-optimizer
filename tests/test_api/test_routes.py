@@ -16,7 +16,7 @@ def app():
     flask_app = Flask(__name__)
     flask_app.config["TESTING"] = True
     flask_app.config["DATABASE_URL"] = "sqlite:///:memory:"
-    flask_app.register_blueprint(api_bp, url_prefix="/api")
+    flask_app.register_blueprint(api_bp, url_prefix="/api/v1")
     return flask_app
 
 
