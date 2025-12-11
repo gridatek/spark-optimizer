@@ -223,8 +223,8 @@ ng serve
 If you have Docker:
 
 ```bash
-# Build and run with docker-compose
-docker-compose up
+# Build and run with docker compose
+docker compose up
 
 # Access API at http://localhost:8080
 ```

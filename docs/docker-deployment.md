@@ -24,13 +24,13 @@ cd spark-resource-optimizer
 cp .env.example .env
 
 # Start services
-docker-compose up -d
+docker compose up -d
 
 # Check status
-docker-compose ps
+docker compose ps
 
 # View logs
-docker-compose logs -f api
+docker compose logs -f api
 ```
 
 The API will be available at `http://localhost:8080`
@@ -56,7 +56,7 @@ Docker Compose uses profiles to enable optional services:
 ### Default Profile (API + Database)
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Services started:
@@ -66,7 +66,7 @@ Services started:
 ### With Background Worker
 
 ```bash
-docker-compose --profile with-worker up -d
+docker compose --profile with-worker up -d
 ```
 
 Additional services:
@@ -76,7 +76,7 @@ Additional services:
 ### With Spark History Server
 
 ```bash
-docker-compose --profile with-spark up -d
+docker compose --profile with-spark up -d
 ```
 
 Additional services:
@@ -85,7 +85,7 @@ Additional services:
 ### With Monitoring
 
 ```bash
-docker-compose --profile with-monitoring up -d
+docker compose --profile with-monitoring up -d
 ```
 
 Additional services:
@@ -97,7 +97,7 @@ Access Grafana at `http://localhost:3000` (admin/admin)
 ### With Database Tools
 
 ```bash
-docker-compose --profile with-tools up -d
+docker compose --profile with-tools up -d
 ```
 
 Additional services:
@@ -108,7 +108,7 @@ Access pgAdmin at `http://localhost:5050` (admin@sparkoptimizer.com/admin)
 ### All Services
 
 ```bash
-docker-compose --profile with-worker --profile with-spark --profile with-monitoring --profile with-tools up -d
+docker compose --profile with-worker --profile with-spark --profile with-monitoring --profile with-tools up -d
 ```
 
 ## Configuration
@@ -153,66 +153,66 @@ volumes:
 
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Specific service
-docker-compose logs -f api
+docker compose logs -f api
 
 # Last 100 lines
-docker-compose logs --tail=100 api
+docker compose logs --tail=100 api
 ```
 
 ### Restart Services
 
 ```bash
 # Restart all
-docker-compose restart
+docker compose restart
 
 # Restart specific service
-docker-compose restart api
+docker compose restart api
 ```
 
 ### Stop Services
 
 ```bash
 # Stop all
-docker-compose stop
+docker compose stop
 
 # Stop specific service
-docker-compose stop api
+docker compose stop api
 ```
 
 ### Remove Services
 
 ```bash
 # Stop and remove containers
-docker-compose down
+docker compose down
 
 # Remove containers and volumes
-docker-compose down -v
+docker compose down -v
 
 # Remove everything including images
-docker-compose down -v --rmi all
+docker compose down -v --rmi all
 ```
 
 ### Scale Services
 
 ```bash
 # Run multiple API instances
-docker-compose up -d --scale api=3
+docker compose up -d --scale api=3
 ```
 
 ### Execute Commands in Container
 
 ```bash
 # Open shell
-docker-compose exec api bash
+docker compose exec api bash
 
 # Run CLI command
-docker-compose exec api spark-optimizer list-jobs --limit 10
+docker compose exec api spark-optimizer list-jobs --limit 10
 
 # Run Python script
-docker-compose exec api python scripts/setup_db.py
+docker compose exec api python scripts/setup_db.py
 ```
 
 ## Database Management
@@ -220,14 +220,14 @@ docker-compose exec api python scripts/setup_db.py
 ### Initialize Database
 
 ```bash
-docker-compose exec api python scripts/setup_db.py
+docker compose exec api python scripts/setup_db.py
 ```
 
 ### Connect to Database
 
 ```bash
-# Using docker-compose
-docker-compose exec db psql -U spark_optimizer -d spark_optimizer
+# Using docker compose
+docker compose exec db psql -U spark_optimizer -d spark_optimizer
 
 # Using local psql client
 psql -h localhost -p 5432 -U spark_optimizer -d spark_optimizer
@@ -237,20 +237,20 @@ psql -h localhost -p 5432 -U spark_optimizer -d spark_optimizer
 
 ```bash
 # Create backup
-docker-compose exec db pg_dump -U spark_optimizer spark_optimizer > backup.sql
+docker compose exec db pg_dump -U spark_optimizer spark_optimizer > backup.sql
 
 # Restore backup
-docker-compose exec -T db psql -U spark_optimizer spark_optimizer < backup.sql
+docker compose exec -T db psql -U spark_optimizer spark_optimizer < backup.sql
 ```
 
 ### Database Migrations
 
 ```bash
 # Run migrations
-docker-compose exec api alembic upgrade head
+docker compose exec api alembic upgrade head
 
 # Create new migration
-docker-compose exec api alembic revision --autogenerate -m "description"
+docker compose exec api alembic revision --autogenerate -m "description"
 ```
 
 ## Data Collection
@@ -263,7 +263,7 @@ mkdir -p event_logs
 cp /path/to/spark-events/* event_logs/
 
 # Run collection
-docker-compose exec api spark-optimizer collect \
+docker compose exec api spark-optimizer collect \
   --source event-logs \
   --path /app/event_logs
 ```
@@ -272,10 +272,10 @@ docker-compose exec api spark-optimizer collect \
 
 ```bash
 # Start History Server profile
-docker-compose --profile with-spark up -d
+docker compose --profile with-spark up -d
 
 # Run collection
-docker-compose exec api spark-optimizer collect \
+docker compose exec api spark-optimizer collect \
   --source history-server \
   --path http://spark-history:18080
 ```
@@ -466,23 +466,23 @@ docker stats spark-optimizer-api
 
 ```bash
 # Check logs
-docker-compose logs api
+docker compose logs api
 
 # Check database connection
-docker-compose exec api python -c "from spark_optimizer.storage.database import Database; db = Database('postgresql://spark_optimizer:spark_password@db:5432/spark_optimizer'); print('Connected')"
+docker compose exec api python -c "from spark_optimizer.storage.database import Database; db = Database('postgresql://spark_optimizer:spark_password@db:5432/spark_optimizer'); print('Connected')"
 ```
 
 ### Database Connection Issues
 
 ```bash
 # Check database is running
-docker-compose ps db
+docker compose ps db
 
 # Check database logs
-docker-compose logs db
+docker compose logs db
 
 # Test connection
-docker-compose exec db psql -U spark_optimizer -d spark_optimizer -c "SELECT 1;"
+docker compose exec db psql -U spark_optimizer -d spark_optimizer -c "SELECT 1;"
 ```
 
 ### Permission Issues
@@ -492,7 +492,7 @@ docker-compose exec db psql -U spark_optimizer -d spark_optimizer -c "SELECT 1;"
 sudo chown -R 1000:1000 data/ logs/
 
 # Or run as root (not recommended for production)
-docker-compose exec -u root api bash
+docker compose exec -u root api bash
 ```
 
 ### Out of Memory
@@ -527,17 +527,17 @@ netstat -ano | findstr :8080  # Windows
 git pull
 
 # Rebuild image
-docker-compose build api
+docker compose build api
 
 # Restart with new image
-docker-compose up -d api
+docker compose up -d api
 ```
 
 ### Clean Up
 
 ```bash
 # Remove stopped containers
-docker-compose rm
+docker compose rm
 
 # Remove unused images
 docker image prune
@@ -577,23 +577,23 @@ services:
 
 ```bash
 # Run all tests
-docker-compose exec api pytest
+docker compose exec api pytest
 
 # Run with coverage
-docker-compose exec api pytest --cov=spark_optimizer
+docker compose exec api pytest --cov=spark_optimizer
 
 # Run specific test
-docker-compose exec api pytest tests/test_recommender/
+docker compose exec api pytest tests/test_recommender/
 ```
 
 ### Debug Container
 
 ```bash
 # Start with shell
-docker-compose run --rm api bash
+docker compose run --rm api bash
 
 # Install ipdb for debugging
-docker-compose exec api pip install ipdb
+docker compose exec api pip install ipdb
 ```
 
 ## Docker Swarm Deployment
