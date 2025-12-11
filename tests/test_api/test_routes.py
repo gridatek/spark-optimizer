@@ -90,7 +90,7 @@ class TestAPIRoutes:
 
     def test_health_check(self, client):
         """Test health check endpoint returns healthy status."""
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
 
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -120,7 +120,7 @@ class TestAPIRoutes:
         }
 
         response = client.post(
-            "/api/recommend",
+            "/api/v1/recommend",
             data=json.dumps(request_data),
             content_type="application/json",
         )
@@ -139,7 +139,7 @@ class TestAPIRoutes:
         }
 
         response = client.post(
-            "/api/recommend",
+            "/api/v1/recommend",
             data=json.dumps(request_data),
             content_type="application/json",
         )
@@ -156,7 +156,7 @@ class TestAPIRoutes:
         }
 
         response = client.post(
-            "/api/recommend",
+            "/api/v1/recommend",
             data=json.dumps(request_data),
             content_type="application/json",
         )
@@ -178,7 +178,7 @@ class TestAPIRoutes:
         )
         mock_session.query.return_value = mock_query
 
-        response = client.get("/api/jobs")
+        response = client.get("/api/v1/jobs")
 
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -199,7 +199,7 @@ class TestAPIRoutes:
         ]
         mock_session.query.return_value = mock_query
 
-        response = client.get("/api/jobs")
+        response = client.get("/api/v1/jobs")
 
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -220,7 +220,7 @@ class TestAPIRoutes:
         ]
         mock_session.query.return_value = mock_query
 
-        response = client.get("/api/jobs?limit=10&offset=0&app_name=Test")
+        response = client.get("/api/v1/jobs?limit=10&offset=0&app_name=Test")
 
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -235,7 +235,7 @@ class TestAPIRoutes:
             sample_spark_application
         )
 
-        response = client.get("/api/jobs/app-test-123")
+        response = client.get("/api/v1/jobs/app-test-123")
 
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -250,7 +250,7 @@ class TestAPIRoutes:
         mock_db.get_session.return_value.__enter__.return_value = mock_session
         mock_session.query.return_value.filter.return_value.first.return_value = None
 
-        response = client.get("/api/jobs/nonexistent-app")
+        response = client.get("/api/v1/jobs/nonexistent-app")
 
         assert response.status_code == 404
         data = json.loads(response.data)
@@ -263,7 +263,7 @@ class TestAPIRoutes:
         }
 
         response = client.post(
-            "/api/collect",
+            "/api/v1/collect",
             data=json.dumps(request_data),
             content_type="application/json",
         )
@@ -279,7 +279,7 @@ class TestAPIRoutes:
         }
 
         response = client.post(
-            "/api/collect",
+            "/api/v1/collect",
             data=json.dumps(request_data),
             content_type="application/json",
         )
@@ -297,7 +297,7 @@ class TestAPIRoutes:
         }
 
         response = client.post(
-            "/api/collect",
+            "/api/v1/collect",
             data=json.dumps(request_data),
             content_type="application/json",
         )
@@ -342,7 +342,7 @@ class TestAPIRoutes:
         with patch(
             "spark_optimizer.api.routes.get_analyzer", return_value=mock_analyzer
         ):
-            response = client.get("/api/analyze/app-test-123")
+            response = client.get("/api/v1/analyze/app-test-123")
 
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -357,7 +357,7 @@ class TestAPIRoutes:
         mock_session.query.return_value.filter.return_value.first.return_value = None
 
         with patch("spark_optimizer.api.routes.get_analyzer"):
-            response = client.get("/api/analyze/nonexistent-app")
+            response = client.get("/api/v1/analyze/nonexistent-app")
 
         assert response.status_code == 404
         data = json.loads(response.data)
@@ -379,7 +379,7 @@ class TestAPIRoutes:
             }
 
             response = client.post(
-                "/api/feedback",
+                "/api/v1/feedback",
                 data=json.dumps(request_data),
                 content_type="application/json",
             )
@@ -395,7 +395,7 @@ class TestAPIRoutes:
         }
 
         response = client.post(
-            "/api/feedback",
+            "/api/v1/feedback",
             data=json.dumps(request_data),
             content_type="application/json",
         )
@@ -412,7 +412,7 @@ class TestAPIRoutes:
         }
 
         response = client.post(
-            "/api/feedback",
+            "/api/v1/feedback",
             data=json.dumps(request_data),
             content_type="application/json",
         )
@@ -428,7 +428,7 @@ class TestAPIRoutes:
         mock_session.query.return_value.scalar.return_value = 0
         mock_session.query.return_value.group_by.return_value.all.return_value = []
 
-        response = client.get("/api/stats")
+        response = client.get("/api/v1/stats")
 
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -452,7 +452,7 @@ class TestAPIRoutes:
             ("streaming_job", 20),
         ]
 
-        response = client.get("/api/stats")
+        response = client.get("/api/v1/stats")
 
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -465,7 +465,7 @@ class TestRecommendationValidation:
     def test_empty_request_body(self, client):
         """Test recommendation with empty request body."""
         response = client.post(
-            "/api/recommend",
+            "/api/v1/recommend",
             data=json.dumps({}),
             content_type="application/json",
         )
@@ -474,7 +474,7 @@ class TestRecommendationValidation:
 
     def test_no_content_type(self, client):
         """Test recommendation without content-type header."""
-        response = client.post("/api/recommend", data='{"input_size_gb": 10}')
+        response = client.post("/api/v1/recommend", data='{"input_size_gb": 10}')
 
         # Flask should handle this gracefully
         assert response.status_code in [400, 415]
@@ -497,7 +497,7 @@ class TestRecommendationValidation:
         }
 
         response = client.post(
-            "/api/recommend",
+            "/api/v1/recommend",
             data=json.dumps(request_data),
             content_type="application/json",
         )
@@ -522,7 +522,7 @@ class TestJobFiltering:
         mock_session.query.return_value = mock_query
 
         response = client.get(
-            "/api/jobs?date_from=2024-01-01T00:00:00Z&date_to=2024-12-31T23:59:59Z"
+            "/api/v1/jobs?date_from=2024-01-01T00:00:00Z&date_to=2024-12-31T23:59:59Z"
         )
 
         assert response.status_code == 200
@@ -540,7 +540,7 @@ class TestJobFiltering:
         ]
         mock_session.query.return_value = mock_query
 
-        response = client.get("/api/jobs?min_duration=60&max_duration=3600")
+        response = client.get("/api/v1/jobs?min_duration=60&max_duration=3600")
 
         assert response.status_code == 200
 
@@ -556,7 +556,7 @@ class TestJobFiltering:
         ]
         mock_session.query.return_value = mock_query
 
-        response = client.get("/api/jobs?limit=10&offset=20")
+        response = client.get("/api/v1/jobs?limit=10&offset=20")
 
         assert response.status_code == 200
         data = json.loads(response.data)
