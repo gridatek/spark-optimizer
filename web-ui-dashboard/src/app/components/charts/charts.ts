@@ -248,10 +248,17 @@ export class ChartsComponent implements OnInit {
     // Fetch more jobs for better chart data
     this.apiService.getJobs({ limit: 100 }).subscribe({
       next: (response) => {
-        this.processChartData(response.jobs);
-        this.loading.set(false);
+        try {
+          this.processChartData(response.jobs);
+          this.loading.set(false);
+        } catch (error) {
+          console.error('Error processing chart data:', error);
+          this.error.set('Failed to process analytics data');
+          this.loading.set(false);
+        }
       },
-      error: () => {
+      error: (error) => {
+        console.error('Error loading jobs:', error);
         this.error.set('Failed to load analytics data');
         this.loading.set(false);
       }
