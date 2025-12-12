@@ -143,8 +143,12 @@ class HistoryServerCollector(BaseCollector):
                     elif self.status == "running" and "endTime" not in latest_attempt:
                         filtered.append(app)
                     else:
-                        filtered.append(app)  # Include if status doesn't match known types
-            logger.debug(f"Filtered {len(filtered)}/{len(applications)} applications by status={self.status}")
+                        filtered.append(
+                            app
+                        )  # Include if status doesn't match known types
+            logger.debug(
+                f"Filtered {len(filtered)}/{len(applications)} applications by status={self.status}"
+            )
             return filtered
 
         return applications
@@ -273,9 +277,14 @@ class HistoryServerCollector(BaseCollector):
                     # Fallback to parsing ISO string if epoch not available
                     try:
                         from datetime import datetime
-                        start_time = datetime.fromisoformat(latest_attempt["startTime"].replace("GMT", "+00:00"))
+
+                        start_time = datetime.fromisoformat(
+                            latest_attempt["startTime"].replace("GMT", "+00:00")
+                        )
                     except Exception:
-                        logger.warning(f"Failed to parse startTime: {latest_attempt['startTime']}")
+                        logger.warning(
+                            f"Failed to parse startTime: {latest_attempt['startTime']}"
+                        )
 
                 if "endTimeEpoch" in latest_attempt:
                     end_time = self._parse_timestamp(latest_attempt["endTimeEpoch"])
@@ -283,9 +292,14 @@ class HistoryServerCollector(BaseCollector):
                     # Fallback to parsing ISO string if epoch not available
                     try:
                         from datetime import datetime
-                        end_time = datetime.fromisoformat(latest_attempt["endTime"].replace("GMT", "+00:00"))
+
+                        end_time = datetime.fromisoformat(
+                            latest_attempt["endTime"].replace("GMT", "+00:00")
+                        )
                     except Exception:
-                        logger.warning(f"Failed to parse endTime: {latest_attempt['endTime']}")
+                        logger.warning(
+                            f"Failed to parse endTime: {latest_attempt['endTime']}"
+                        )
 
                 if "duration" in latest_attempt:
                     duration_ms = latest_attempt["duration"]

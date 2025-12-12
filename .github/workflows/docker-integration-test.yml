@@ -112,6 +112,7 @@ jobs:
         name: spark-event-logs
         path: spark-events/
         retention-days: 7
+        if-no-files-found: ignore
 
   docker-integration-test-extended:
     name: Run Extended Integration Tests
@@ -203,3 +204,4 @@ jobs:
         name: spark-event-logs-extended
         path: spark-events/
         retention-days: 7
+        if-no-files-found: ignore
