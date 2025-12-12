@@ -105,6 +105,13 @@ jobs:
       run: |
         docker compose --profile with-spark down -v
 
+    - name: Fix event log permissions
+      if: always()
+      run: |
+        # Fix permissions so GitHub Actions can read the files created by Docker
+        sudo chown -R $USER:$USER spark-events/ || true
+        sudo chmod -R 644 spark-events/* || true
+
     - name: Upload event logs as artifacts
       if: always()
       continue-on-error: true
@@ -197,6 +204,13 @@ jobs:
       if: always()
       run: |
         docker compose --profile with-spark down -v
+
+    - name: Fix event log permissions
+      if: always()
+      run: |
+        # Fix permissions so GitHub Actions can read the files created by Docker
+        sudo chown -R $USER:$USER spark-events/ || true
+        sudo chmod -R 644 spark-events/* || true
 
     - name: Upload extended test artifacts
       if: always()
