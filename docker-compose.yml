@@ -87,17 +87,61 @@ services:
     profiles:
       - with-worker
 
+  # Spark Master
+  spark-master:
+    image: apache/spark:3.5.0
+    container_name: spark-master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+    ports:
+      - "7077:7077"
+      - "8081:8080"
+    volumes:
+      - ./spark-events:/spark-events
+      - ./spark-jobs:/opt/spark-jobs
+    command: /opt/spark/sbin/start-master.sh -h 0.0.0.0
+    restart: unless-stopped
+    networks:
+      - spark-optimizer-network
+    profiles:
+      - with-spark
+
+  # Spark Worker
+  spark-worker:
+    image: apache/spark:3.5.0
+    container_name: spark-worker
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+    ports:
+      - "8082:8081"
+    volumes:
+      - ./spark-events:/spark-events
+      - ./spark-jobs:/opt/spark-jobs
+    command: /opt/spark/sbin/start-worker.sh spark://spark-master:7077
+    depends_on:
+      - spark-master
+    restart: unless-stopped
+    networks:
+      - spark-optimizer-network
+    profiles:
+      - with-spark
+
   # Spark History Server (for testing data collection)
   spark-history:
-    image: bitnami/spark:3.4
+    image: apache/spark:3.5.0
     container_name: spark-history-server
     environment:
-      - SPARK_MODE=history-server
+      - SPARK_NO_DAEMONIZE=true
       - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=/spark-events
     ports:
       - "18080:18080"
     volumes:
-      - ./spark-events:/spark-events:ro
+      - ./spark-events:/spark-events
+    command: /opt/spark/sbin/start-history-server.sh
+    depends_on:
+      - spark-master
     restart: unless-stopped
     networks:
       - spark-optimizer-network
