@@ -536,7 +536,9 @@ def db_current(db_url: str):
         alembic_ini_path = project_root / "alembic.ini"
 
         if not alembic_ini_path.exists():
-            click.echo(f"✗ Alembic configuration not found at {alembic_ini_path}", err=True)
+            click.echo(
+                f"✗ Alembic configuration not found at {alembic_ini_path}", err=True
+            )
             sys.exit(1)
 
         # Create Alembic config
@@ -570,7 +572,9 @@ def db_history(db_url: str, verbose: bool):
         alembic_ini_path = project_root / "alembic.ini"
 
         if not alembic_ini_path.exists():
-            click.echo(f"✗ Alembic configuration not found at {alembic_ini_path}", err=True)
+            click.echo(
+                f"✗ Alembic configuration not found at {alembic_ini_path}", err=True
+            )
             sys.exit(1)
 
         # Create Alembic config
@@ -606,7 +610,9 @@ def db_stamp(db_url: str, revision: str):
         alembic_ini_path = project_root / "alembic.ini"
 
         if not alembic_ini_path.exists():
-            click.echo(f"✗ Alembic configuration not found at {alembic_ini_path}", err=True)
+            click.echo(
+                f"✗ Alembic configuration not found at {alembic_ini_path}", err=True
+            )
             sys.exit(1)
 
         # Create Alembic config

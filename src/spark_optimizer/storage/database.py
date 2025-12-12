@@ -35,15 +35,27 @@ class Database:
 
         This method runs all pending migrations to bring the database
         to the latest schema version.
+
+        For in-memory databases, falls back to direct table creation
+        as Alembic migrations don't work well with in-memory databases.
         """
-        try:
-            self.run_migrations()
-        except Exception as e:
-            logger.warning(
-                f"Failed to run migrations: {e}. Falling back to direct table creation."
-            )
-            # Fallback to direct table creation for backwards compatibility
+        # Check if using in-memory database
+        is_in_memory = ":memory:" in self.connection_string
+
+        if is_in_memory:
+            # Use direct table creation for in-memory databases
+            logger.info("Using in-memory database, creating tables directly")
             Base.metadata.create_all(bind=self.engine)
+        else:
+            # Use Alembic migrations for persistent databases
+            try:
+                self.run_migrations()
+            except Exception as e:
+                logger.warning(
+                    f"Failed to run migrations: {e}. Falling back to direct table creation."
+                )
+                # Fallback to direct table creation for backwards compatibility
+                Base.metadata.create_all(bind=self.engine)
 
     def run_migrations(self, revision: str = "head"):
         """Run Alembic migrations programmatically.
