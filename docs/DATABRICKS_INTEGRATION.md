@@ -310,7 +310,7 @@ Run collection as a Databricks job itself:
 
 ```python
 # In a Databricks notebook
-%pip install spark-resource-optimizer
+%pip install spark-optimizer
 
 from spark_optimizer.collectors import DatabricksCollector
 from spark_optimizer.storage import Database
@@ -416,5 +416,5 @@ Create service principals with minimal required permissions:
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/gridatek/spark-resource-optimizer/issues
-- Documentation: https://github.com/gridatek/spark-resource-optimizer/docs
+- GitHub Issues: https://github.com/gridatek/spark-optimizer/issues
+- Documentation: https://github.com/gridatek/spark-optimizer/docs

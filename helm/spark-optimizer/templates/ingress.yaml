@@ -2,9 +2,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "spark-resource-optimizer.fullname" . }}
+  name: {{ include "spark-optimizer.fullname" . }}
   labels:
-    {{- include "spark-resource-optimizer.labels" . | nindent 4 }}
+    {{- include "spark-optimizer.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -33,7 +33,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "spark-resource-optimizer.fullname" $ }}
+                name: {{ include "spark-optimizer.fullname" $ }}
                 port:
                   name: http
           {{- end }}

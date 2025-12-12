@@ -1,4 +1,4 @@
-# Spark Resource Optimizer
+# Spark Optimizer
 
 An open-source tool that analyzes historical Spark job runs to recommend optimal resource configurations for future executions.
 
@@ -30,8 +30,8 @@ An open-source tool that analyzes historical Spark job runs to recommend optimal
 
 ```bash
 # Clone the repository
-git clone https://github.com/gridatek/spark-resource-optimizer.git
-cd spark-resource-optimizer
+git clone https://github.com/gridatek/spark-optimizer.git
+cd spark-optimizer
 
 # Install dependencies
 pip install -e .
@@ -55,15 +55,15 @@ spark-optimizer collect --event-log-dir /path/to/spark/logs
 spark-optimizer collect-from-history-server --history-server-url http://localhost:18080
 
 # Collect data from AWS EMR
-pip install spark-resource-optimizer[aws]
+pip install spark-optimizer[aws]
 spark-optimizer collect-from-emr --region us-west-2
 
 # Collect data from Databricks
-pip install spark-resource-optimizer[databricks]
+pip install spark-optimizer[databricks]
 spark-optimizer collect-from-databricks --workspace-url https://dbc-xxx.cloud.databricks.com
 
 # Collect data from GCP Dataproc
-pip install spark-resource-optimizer[gcp]
+pip install spark-optimizer[gcp]
 spark-optimizer collect-from-dataproc --project my-project --region us-central1
 
 # Get recommendations for a new job
@@ -90,7 +90,7 @@ Provides REST endpoints and CLI commands for accessing recommendations.
 ## Project Structure
 
 ```
-spark-resource-optimizer/
+spark-optimizer/
 ├── README.md
 ├── LICENSE
 ├── setup.py
@@ -159,7 +159,7 @@ If you use this tool in your research or production systems, please cite:
   title = {Spark Resource Optimizer},
   author = {Gridatek},
   year = {2024},
-  url = {https://github.com/gridatek/spark-resource-optimizer}
+  url = {https://github.com/gridatek/spark-optimizer}
 }
 ```
 

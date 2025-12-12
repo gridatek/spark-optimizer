@@ -5,7 +5,7 @@ An open-source tool that analyzes historical Spark job runs to recommend optimal
 ## Project Structure
 
 ```
-spark-resource-optimizer/
+spark-optimizer/
 ├── README.md
 ├── LICENSE
 ├── setup.py
@@ -75,8 +75,8 @@ spark-resource-optimizer/
 
 ```bash
 # Clone the repository
-git clone https://github.com/gridatek/spark-resource-optimizer.git
-cd spark-resource-optimizer
+git clone https://github.com/gridatek/spark-optimizer.git
+cd spark-optimizer
 
 # Install dependencies
 pip install -e .
@@ -169,6 +169,6 @@ If you use this tool in your research or production systems, please cite:
   title = {Spark Resource Optimizer},
   author = {Your Name},
   year = {2024},
-  url = {https://github.com/gridatek/spark-resource-optimizer}
+  url = {https://github.com/gridatek/spark-optimizer}
 }
 ```

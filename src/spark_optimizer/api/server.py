@@ -138,7 +138,7 @@ def _ensure_initialized() -> (
 def health_check():
     """Health check endpoint"""
     return jsonify(
-        {"status": "healthy", "service": "spark-resource-optimizer", "version": "0.1.0"}
+        {"status": "healthy", "service": "spark-optimizer", "version": "0.1.0"}
     )
 
 

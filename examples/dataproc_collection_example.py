@@ -11,7 +11,7 @@ This example demonstrates how to:
 6. Store metrics in a database
 
 Prerequisites:
-- pip install spark-resource-optimizer[gcp]
+- pip install spark-optimizer[gcp]
 - GCP credentials configured (gcloud auth or service account)
 - GCP project with Dataproc clusters
 """
@@ -26,7 +26,7 @@ try:
 except ImportError as e:
     print(f"Error: {e}")
     print("\nPlease install the required packages:")
-    print("pip install spark-resource-optimizer[gcp]")
+    print("pip install spark-optimizer[gcp]")
     sys.exit(1)
 
 

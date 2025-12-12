@@ -47,7 +47,7 @@ Check API server health status.
 ```json
 {
     "status": "healthy",
-    "service": "spark-resource-optimizer",
+    "service": "spark-optimizer",
     "version": "0.1.0"
 }
 ```
@@ -1058,7 +1058,7 @@ curl -X POST http://localhost:8080/feedback \
 ### Installation
 
 ```bash
-pip install spark-resource-optimizer
+pip install spark-optimizer
 ```
 
 ### Global Options
@@ -1328,5 +1328,5 @@ print(analysis.suggestions)
 ## Support
 
 For issues, questions, or feature requests:
-- GitHub Issues: https://github.com/gridatek/spark-resource-optimizer/issues
+- GitHub Issues: https://github.com/gridatek/spark-optimizer/issues
 - Documentation: https://spark-optimizer.readthedocs.io

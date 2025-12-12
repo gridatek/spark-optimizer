@@ -11,7 +11,7 @@ This example demonstrates how to:
 6. Store metrics in a database
 
 Prerequisites:
-- pip install spark-resource-optimizer[databricks]
+- pip install spark-optimizer[databricks]
 - Databricks workspace URL
 - Databricks access token (PAT)
 """
@@ -27,7 +27,7 @@ try:
 except ImportError as e:
     print(f"Error: {e}")
     print("\nPlease install the required packages:")
-    print("pip install spark-resource-optimizer")
+    print("pip install spark-optimizer")
     sys.exit(1)
 
 

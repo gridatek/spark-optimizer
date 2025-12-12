@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "spark-resource-optimizer.name" -}}
+{{- define "spark-optimizer.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "spark-resource-optimizer.fullname" -}}
+{{- define "spark-optimizer.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "spark-resource-optimizer.chart" -}}
+{{- define "spark-optimizer.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "spark-resource-optimizer.labels" -}}
-helm.sh/chart: {{ include "spark-resource-optimizer.chart" . }}
-{{ include "spark-resource-optimizer.selectorLabels" . }}
+{{- define "spark-optimizer.labels" -}}
+helm.sh/chart: {{ include "spark-optimizer.chart" . }}
+{{ include "spark-optimizer.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "spark-resource-optimizer.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "spark-resource-optimizer.name" . }}
+{{- define "spark-optimizer.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "spark-optimizer.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "spark-resource-optimizer.serviceAccountName" -}}
+{{- define "spark-optimizer.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "spark-resource-optimizer.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "spark-optimizer.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
@@ -64,7 +64,7 @@ Create the name of the service account to use
 {{/*
 Create the database URL
 */}}
-{{- define "spark-resource-optimizer.databaseUrl" -}}
+{{- define "spark-optimizer.databaseUrl" -}}
 {{- if .Values.database.external }}
 {{- printf "postgresql://%s:%s@%s:%d/%s?sslmode=%s" .Values.database.username .Values.database.password .Values.database.host (int .Values.database.port) .Values.database.name .Values.database.sslMode }}
 {{- else if .Values.postgresql.enabled }}
@@ -79,7 +79,7 @@ Create the database URL
 {{/*
 Return the proper image name
 */}}
-{{- define "spark-resource-optimizer.image" -}}
+{{- define "spark-optimizer.image" -}}
 {{- $tag := default .Chart.AppVersion .Values.image.tag }}
 {{- printf "%s:%s" .Values.image.repository $tag }}
 {{- end }}
@@ -87,30 +87,30 @@ Return the proper image name
 {{/*
 Return the secret name for database credentials
 */}}
-{{- define "spark-resource-optimizer.databaseSecretName" -}}
-{{- printf "%s-db-secret" (include "spark-resource-optimizer.fullname" .) }}
+{{- define "spark-optimizer.databaseSecretName" -}}
+{{- printf "%s-db-secret" (include "spark-optimizer.fullname" .) }}
 {{- end }}
 
 {{/*
 Return the secret name for JWT
 */}}
-{{- define "spark-resource-optimizer.jwtSecretName" -}}
-{{- printf "%s-jwt-secret" (include "spark-resource-optimizer.fullname" .) }}
+{{- define "spark-optimizer.jwtSecretName" -}}
+{{- printf "%s-jwt-secret" (include "spark-optimizer.fullname" .) }}
 {{- end }}
 
 {{/*
 Return the configmap name
 */}}
-{{- define "spark-resource-optimizer.configMapName" -}}
-{{- printf "%s-config" (include "spark-resource-optimizer.fullname" .) }}
+{{- define "spark-optimizer.configMapName" -}}
+{{- printf "%s-config" (include "spark-optimizer.fullname" .) }}
 {{- end }}
 
 {{/*
 Worker labels
 */}}
-{{- define "spark-resource-optimizer.workerLabels" -}}
-helm.sh/chart: {{ include "spark-resource-optimizer.chart" . }}
-{{ include "spark-resource-optimizer.workerSelectorLabels" . }}
+{{- define "spark-optimizer.workerLabels" -}}
+helm.sh/chart: {{ include "spark-optimizer.chart" . }}
+{{ include "spark-optimizer.workerSelectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -120,8 +120,8 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Worker selector labels
 */}}
-{{- define "spark-resource-optimizer.workerSelectorLabels" -}}
-app.kubernetes.io/name: {{ include "spark-resource-optimizer.name" . }}-worker
+{{- define "spark-optimizer.workerSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "spark-optimizer.name" . }}-worker
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: worker
 {{- end }}

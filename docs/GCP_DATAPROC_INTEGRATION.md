@@ -508,5 +508,5 @@ gcloud iam roles create dataprocMetricsCollector \
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/gridatek/spark-resource-optimizer/issues
-- Documentation: https://github.com/gridatek/spark-resource-optimizer/docs
+- GitHub Issues: https://github.com/gridatek/spark-optimizer/issues
+- Documentation: https://github.com/gridatek/spark-optimizer/docs

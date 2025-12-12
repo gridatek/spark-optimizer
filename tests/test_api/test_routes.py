@@ -95,7 +95,7 @@ class TestAPIRoutes:
         assert response.status_code == 200
         data = json.loads(response.data)
         assert data["status"] == "healthy"
-        assert data["service"] == "spark-resource-optimizer"
+        assert data["service"] == "spark-optimizer"
 
     def test_get_recommendation_success(self, client, mock_recommender):
         """Test successful recommendation request."""

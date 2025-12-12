@@ -97,8 +97,8 @@ Spark Resource Optimizer is an open-source tool that helps you choose the best r
 
 ```bash
 # Clone the repository
-git clone https://github.com/gridatek/spark-resource-optimizer.git
-cd spark-resource-optimizer
+git clone https://github.com/gridatek/spark-optimizer.git
+cd spark-optimizer
 
 # Create virtual environment
 python -m venv venv

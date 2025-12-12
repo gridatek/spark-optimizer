@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "spark-resource-optimizer.fullname" . }}
+  name: {{ include "spark-optimizer.fullname" . }}
   labels:
-    {{- include "spark-resource-optimizer.labels" . | nindent 4 }}
+    {{- include "spark-optimizer.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "spark-resource-optimizer.selectorLabels" . | nindent 6 }}
+      {{- include "spark-optimizer.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -20,20 +20,20 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "spark-resource-optimizer.selectorLabels" . | nindent 8 }}
+        {{- include "spark-optimizer.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "spark-resource-optimizer.serviceAccountName" . }}
+      serviceAccountName: {{ include "spark-optimizer.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: {{ include "spark-resource-optimizer.image" . }}
+          image: {{ include "spark-optimizer.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
@@ -46,12 +46,12 @@ spec:
             {{- end }}
           envFrom:
             - configMapRef:
-                name: {{ include "spark-resource-optimizer.configMapName" . }}
+                name: {{ include "spark-optimizer.configMapName" . }}
             - secretRef:
-                name: {{ include "spark-resource-optimizer.databaseSecretName" . }}
+                name: {{ include "spark-optimizer.databaseSecretName" . }}
             {{- if .Values.config.features.auth }}
             - secretRef:
-                name: {{ include "spark-resource-optimizer.jwtSecretName" . }}
+                name: {{ include "spark-optimizer.jwtSecretName" . }}
             {{- end }}
           {{- with .Values.healthCheck.livenessProbe }}
           livenessProbe:
@@ -81,12 +81,12 @@ spec:
         {{- if .Values.persistence.eventLogs.enabled }}
         - name: event-logs
           persistentVolumeClaim:
-            claimName: {{ .Values.persistence.eventLogs.existingClaim | default (printf "%s-event-logs" (include "spark-resource-optimizer.fullname" .)) }}
+            claimName: {{ .Values.persistence.eventLogs.existingClaim | default (printf "%s-event-logs" (include "spark-optimizer.fullname" .)) }}
         {{- end }}
         {{- if .Values.persistence.data.enabled }}
         - name: data
           persistentVolumeClaim:
-            claimName: {{ .Values.persistence.data.existingClaim | default (printf "%s-data" (include "spark-resource-optimizer.fullname" .)) }}
+            claimName: {{ .Values.persistence.data.existingClaim | default (printf "%s-data" (include "spark-optimizer.fullname" .)) }}
         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

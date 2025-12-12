@@ -70,7 +70,7 @@ def health_check():
     Returns:
         JSON response with health status
     """
-    return jsonify({"status": "healthy", "service": "spark-resource-optimizer"})
+    return jsonify({"status": "healthy", "service": "spark-optimizer"})
 
 
 @api_bp.route("/recommend", methods=["POST"])

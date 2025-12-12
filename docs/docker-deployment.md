@@ -17,8 +17,8 @@ This guide covers deploying the Spark Resource Optimizer using Docker and Docker
 
 ```bash
 # Clone the repository
-git clone https://github.com/gridatek/spark-resource-optimizer.git
-cd spark-resource-optimizer
+git clone https://github.com/gridatek/spark-optimizer.git
+cd spark-optimizer
 
 # Copy environment file
 cp .env.example .env
@@ -45,7 +45,7 @@ Expected response:
 ```json
 {
     "status": "healthy",
-    "service": "spark-resource-optimizer"
+    "service": "spark-optimizer"
 }
 ```
 
@@ -553,10 +553,10 @@ docker system prune -a --volumes
 
 ```bash
 # Backup volumes
-docker run --rm -v spark-resource-optimizer_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz /data
+docker run --rm -v spark-optimizer_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz /data
 
 # Restore volumes
-docker run --rm -v spark-resource-optimizer_postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres_backup.tar.gz -C /
+docker run --rm -v spark-optimizer_postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres_backup.tar.gz -C /
 ```
 
 ## Development with Docker
@@ -637,5 +637,5 @@ kubectl logs -f deployment/spark-optimizer-api
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/gridatek/spark-resource-optimizer/issues
+- GitHub Issues: https://github.com/gridatek/spark-optimizer/issues
 - Documentation: https://spark-optimizer.readthedocs.io

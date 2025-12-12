@@ -287,9 +287,9 @@ The release workflow will automatically:
 ### 4. Verify Release
 
 - Check GitHub Releases page
-- Verify PyPI package: https://pypi.org/project/spark-resource-optimizer/
-- Test Docker image: `docker pull gridatek/spark-resource-optimizer:1.0.0`
-- Check documentation: https://gridatek.github.io/spark-resource-optimizer/
+- Verify PyPI package: https://pypi.org/project/spark-optimizer/
+- Test Docker image: `docker pull gridatek/spark-optimizer:1.0.0`
+- Check documentation: https://gridatek.github.io/spark-optimizer/
 
 ## Troubleshooting
 
@@ -352,11 +352,11 @@ docker build --target builder -t test-builder .
 - Re-run failed workflows
 
 ### Code Coverage
-- View reports: https://codecov.io/gh/gridatek/spark-resource-optimizer
+- View reports: https://codecov.io/gh/gridatek/spark-optimizer
 - Coverage must stay above 80%
 
 ### Code Quality
-- View analysis: https://sonarcloud.io/dashboard?id=gridatek_spark-resource-optimizer
+- View analysis: https://sonarcloud.io/dashboard?id=gridatek_spark-optimizer
 - Address quality gate failures
 
 ### Security
@@ -377,6 +377,6 @@ docker build --target builder -t test-builder .
 
 ## Getting Help
 
-- GitHub Issues: https://github.com/gridatek/spark-resource-optimizer/issues
+- GitHub Issues: https://github.com/gridatek/spark-optimizer/issues
 - CI/CD failures: Check workflow logs in Actions tab
 - Questions: Open a discussion or issue

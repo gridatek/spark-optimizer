@@ -115,9 +115,9 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
-          gridatek/spark-resource-optimizer:latest
-          gridatek/spark-resource-optimizer:${{ steps.version.outputs.VERSION }}
-          gridatek/spark-resource-optimizer:${{ github.ref_name }}
+          gridatek/spark-optimizer:latest
+          gridatek/spark-optimizer:${{ steps.version.outputs.VERSION }}
+          gridatek/spark-optimizer:${{ github.ref_name }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

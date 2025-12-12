@@ -13,7 +13,7 @@ info:
   version: 1.0.0
   contact:
     name: Spark Resource Optimizer
-    url: https://github.com/yourusername/spark-resource-optimizer
+    url: https://github.com/yourusername/spark-optimizer
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT

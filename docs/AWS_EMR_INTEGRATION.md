@@ -17,7 +17,7 @@ The EMR collector enables you to:
 
 ```bash
 # Install with AWS support
-pip install spark-resource-optimizer[aws]
+pip install spark-optimizer[aws]
 
 # Or install boto3 directly
 pip install boto3
@@ -391,5 +391,5 @@ def lambda_handler(event, context):
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/gridatek/spark-resource-optimizer/issues
-- Documentation: https://github.com/gridatek/spark-resource-optimizer/docs
+- GitHub Issues: https://github.com/gridatek/spark-optimizer/issues
+- Documentation: https://github.com/gridatek/spark-optimizer/docs

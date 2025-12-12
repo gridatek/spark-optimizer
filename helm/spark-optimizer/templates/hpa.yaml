@@ -2,14 +2,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "spark-resource-optimizer.fullname" . }}
+  name: {{ include "spark-optimizer.fullname" . }}
   labels:
-    {{- include "spark-resource-optimizer.labels" . | nindent 4 }}
+    {{- include "spark-optimizer.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "spark-resource-optimizer.fullname" . }}
+    name: {{ include "spark-optimizer.fullname" . }}
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:

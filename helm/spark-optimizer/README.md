@@ -24,13 +24,13 @@ helm repo update
 cd helm
 
 # Install with default values
-helm install spark-optimizer ./spark-resource-optimizer
+helm install spark-optimizer ./spark-optimizer
 
 # Install with custom values
-helm install spark-optimizer ./spark-resource-optimizer -f my-values.yaml
+helm install spark-optimizer ./spark-optimizer -f my-values.yaml
 
 # Install in a specific namespace
-helm install spark-optimizer ./spark-resource-optimizer -n spark-system --create-namespace
+helm install spark-optimizer ./spark-optimizer -n spark-system --create-namespace
 ```
 
 ## Configuration
@@ -40,7 +40,7 @@ helm install spark-optimizer ./spark-resource-optimizer -n spark-system --create
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `replicaCount` | Number of API server replicas | `2` |
-| `image.repository` | Image repository | `gridatek/spark-resource-optimizer` |
+| `image.repository` | Image repository | `gridatek/spark-optimizer` |
 | `image.tag` | Image tag | `""` (uses appVersion) |
 | `config.features.auth` | Enable authentication | `true` |
 | `config.features.monitoring` | Enable real-time monitoring | `true` |
@@ -140,7 +140,7 @@ autoscaling:
 ## Upgrading
 
 ```bash
-helm upgrade spark-optimizer ./spark-resource-optimizer -f my-values.yaml
+helm upgrade spark-optimizer ./spark-optimizer -f my-values.yaml
 ```
 
 ## Uninstalling
@@ -176,13 +176,13 @@ helm uninstall spark-optimizer
 ### Check pod status
 
 ```bash
-kubectl get pods -l app.kubernetes.io/name=spark-resource-optimizer
+kubectl get pods -l app.kubernetes.io/name=spark-optimizer
 ```
 
 ### View logs
 
 ```bash
-kubectl logs -l app.kubernetes.io/name=spark-resource-optimizer -f
+kubectl logs -l app.kubernetes.io/name=spark-optimizer -f
 ```
 
 ### Check configuration

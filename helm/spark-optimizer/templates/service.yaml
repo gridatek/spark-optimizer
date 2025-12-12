@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "spark-resource-optimizer.fullname" . }}
+  name: {{ include "spark-optimizer.fullname" . }}
   labels:
-    {{- include "spark-resource-optimizer.labels" . | nindent 4 }}
+    {{- include "spark-optimizer.labels" . | nindent 4 }}
   {{- with .Values.service.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -22,4 +22,4 @@ spec:
       name: websocket
     {{- end }}
   selector:
-    {{- include "spark-resource-optimizer.selectorLabels" . | nindent 4 }}
+    {{- include "spark-optimizer.selectorLabels" . | nindent 4 }}

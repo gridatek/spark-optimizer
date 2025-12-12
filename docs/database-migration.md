@@ -577,5 +577,5 @@ print(f"Database Health: {stats}")
 ## Support
 
 For database-related issues:
-- GitHub Issues: https://github.com/gridatek/spark-resource-optimizer/issues
+- GitHub Issues: https://github.com/gridatek/spark-optimizer/issues
 - Documentation: https://spark-optimizer.readthedocs.io/database

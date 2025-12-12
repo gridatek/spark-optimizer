@@ -148,7 +148,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
           <p class="text-gray-600 m-0">&copy; 2025 Gridatek - Spark Resource Optimizer</p>
           <div class="flex flex-col md:flex-row gap-2 md:gap-6">
             <a
-              href="https://github.com/gridatek/spark-resource-optimizer"
+              href="https://github.com/gridatek/spark-optimizer"
               target="_blank"
               rel="noopener"
               class="text-gray-700 no-underline text-sm transition-colors hover:text-blue-500"
@@ -156,7 +156,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               GitHub
             </a>
             <a
-              href="https://github.com/gridatek/spark-resource-optimizer/docs"
+              href="https://github.com/gridatek/spark-optimizer/docs"
               target="_blank"
               rel="noopener"
               class="text-gray-700 no-underline text-sm transition-colors hover:text-blue-500"
