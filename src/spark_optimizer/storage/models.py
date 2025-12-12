@@ -1,7 +1,7 @@
 """Database models for storing Spark job data."""
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, JSON, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, String, Float, DateTime, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -18,7 +18,7 @@ class SparkApplication(Base):  # type: ignore[misc,valid-type]
     submit_time = Column(DateTime)
     start_time = Column(DateTime)
     end_time = Column(DateTime)
-    duration_ms = Column(Integer)
+    duration_ms = Column(BigInteger)
     status = Column(String)  # completed, failed, running
     spark_version = Column(String)
 
@@ -35,19 +35,19 @@ class SparkApplication(Base):  # type: ignore[misc,valid-type]
     failed_stages = Column(Integer)
 
     # Storage metrics
-    input_bytes = Column(Integer)
-    output_bytes = Column(Integer)
-    shuffle_read_bytes = Column(Integer)
-    shuffle_write_bytes = Column(Integer)
+    input_bytes = Column(BigInteger)
+    output_bytes = Column(BigInteger)
+    shuffle_read_bytes = Column(BigInteger)
+    shuffle_write_bytes = Column(BigInteger)
 
     # Computed metrics
-    cpu_time_ms = Column(Integer)
-    memory_spilled_bytes = Column(Integer)
-    disk_spilled_bytes = Column(Integer)
-    executor_run_time_ms = Column(Integer)
-    executor_cpu_time_ms = Column(Integer)
-    jvm_gc_time_ms = Column(Integer)
-    peak_memory_usage = Column(Integer)
+    cpu_time_ms = Column(BigInteger)
+    memory_spilled_bytes = Column(BigInteger)
+    disk_spilled_bytes = Column(BigInteger)
+    executor_run_time_ms = Column(BigInteger)
+    executor_cpu_time_ms = Column(BigInteger)
+    jvm_gc_time_ms = Column(BigInteger)
+    peak_memory_usage = Column(BigInteger)
 
     # Cost estimation
     cluster_type = Column(String)
@@ -83,19 +83,19 @@ class SparkStage(Base):  # type: ignore[misc,valid-type]
     num_tasks = Column(Integer)
     submission_time = Column(DateTime)
     completion_time = Column(DateTime)
-    duration_ms = Column(Integer)
+    duration_ms = Column(BigInteger)
 
     # Resource usage
-    executor_run_time_ms = Column(Integer)
-    executor_cpu_time_ms = Column(Integer)
-    memory_bytes_spilled = Column(Integer)
-    disk_bytes_spilled = Column(Integer)
+    executor_run_time_ms = Column(BigInteger)
+    executor_cpu_time_ms = Column(BigInteger)
+    memory_bytes_spilled = Column(BigInteger)
+    disk_bytes_spilled = Column(BigInteger)
 
     # I/O metrics
-    input_bytes = Column(Integer)
-    output_bytes = Column(Integer)
-    shuffle_read_bytes = Column(Integer)
-    shuffle_write_bytes = Column(Integer)
+    input_bytes = Column(BigInteger)
+    output_bytes = Column(BigInteger)
+    shuffle_read_bytes = Column(BigInteger)
+    shuffle_write_bytes = Column(BigInteger)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -118,7 +118,7 @@ class JobRecommendation(Base):  # type: ignore[misc,valid-type]
     recommended_driver_memory_mb = Column(Integer)
 
     # Predicted metrics
-    predicted_duration_ms = Column(Integer)
+    predicted_duration_ms = Column(BigInteger)
     predicted_cost = Column(Float)
     confidence_score = Column(Float)
 
