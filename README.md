@@ -75,80 +75,186 @@ spark-optimizer serve --port 8080
 
 ## Architecture
 
-### Data Collection Layer
-Collects metrics from various Spark deployment platforms and stores them in a normalized format.
+### Overview
 
-### Analysis Layer
-Extracts features from historical jobs and identifies patterns in resource usage and performance.
+The Spark Resource Optimizer is designed with a modular, layered architecture that separates concerns and allows for easy extension and maintenance.
 
-### Recommendation Layer
-Uses similarity matching, ML models, and heuristics to suggest optimal configurations.
-
-### API Layer
-Provides REST endpoints and CLI commands for accessing recommendations.
-
-## Project Structure
+### System Architecture
 
 ```
-spark-optimizer/
-├── README.md
-├── LICENSE
-├── setup.py
-├── requirements.txt
-├── requirements-dev.txt
-├── .gitignore
-├── docker-compose.yml
-├── docs/
-│   ├── architecture.md
-│   ├── data-collection.md
-│   ├── recommendation-engine.md
-│   ├── api-reference.md
-│   ├── AWS_EMR_INTEGRATION.md
-│   ├── DATABRICKS_INTEGRATION.md
-│   └── GCP_DATAPROC_INTEGRATION.md
-├── src/
-│   └── spark_optimizer/
-│       ├── __init__.py
-│       ├── collectors/
-│       ├── storage/
-│       ├── analyzer/
-│       ├── recommender/
-│       ├── api/
-│       ├── cli/
-│       └── utils/
-├── tests/
-├── examples/
-└── scripts/
+┌─────────────────────────────────────────────────────────────┐
+│                     Client Applications                     │
+│          (CLI, REST API Clients, Web Dashboard)             │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      API Layer                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐         │
+│  │  REST API   │  │     CLI     │  │   WebSocket  │         │
+│  │   Routes    │  │  Commands   │  │  (Future)    │         │
+│  └─────────────┘  └─────────────┘  └──────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Business Logic Layer                       │
+│  ┌──────────────────────┐  ┌─────────────────────┐          │
+│  │   Recommender        │  │   Analyzer          │          │
+│  │  - Similarity        │  │  - Job Analysis     │          │
+│  │  - ML-based          │  │  - Similarity       │          │
+│  │  - Rule-based        │  │  - Features         │          │
+│  └──────────────────────┘  └─────────────────────┘          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Data Access Layer                         │
+│  ┌──────────────────────────────────────────────┐           │
+│  │          Repository Pattern                  │           │
+│  │  - SparkApplicationRepository                │           │
+│  │  - JobRecommendationRepository               │           │
+│  └──────────────────────────────────────────────┘           │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Storage Layer                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐         │
+│  │   SQLite    │  │  PostgreSQL │  │    MySQL     │         │
+│  │  (Default)  │  │  (Optional) │  │  (Optional)  │         │
+│  └─────────────┘  └─────────────┘  └──────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Data Collection Layer                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │  Event Log   │  │   History    │  │   Metrics    │       │
+│  │  Collector   │  │    Server    │  │  Collector   │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Data Sources                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │ Spark Event  │  │    Spark     │  │  Prometheus  │       │
+│  │    Logs      │  │   History    │  │   /Grafana   │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Development
+### Core Components
 
-### Running Tests
+#### 1. Data Collection Layer
 
-```bash
-# Install development dependencies
-pip install -e ".[dev]"
+**Purpose**: Gather Spark job metrics from various sources
 
-# Run tests
-pytest
+**Components**:
+- `BaseCollector`: Abstract interface for all collectors
+- `EventLogCollector`: Parse Spark event log files
+- `HistoryServerCollector`: Query Spark History Server API
+- `MetricsCollector`: Integrate with monitoring systems
 
-# Run with coverage
-pytest --cov=spark_optimizer
+**Key Features**:
+- Pluggable collector architecture
+- Batch processing support
+- Error handling and retry logic
+- Data normalization
+
+#### 2. Storage Layer
+
+**Purpose**: Persist job data and recommendations
+
+**Components**:
+- `Database`: Connection management and session handling
+- `Models`: SQLAlchemy ORM models
+  - `SparkApplication`: Job metadata and metrics
+  - `SparkStage`: Stage-level details
+  - `JobRecommendation`: Historical recommendations
+- `Repository`: Data access abstraction
+
+**Key Features**:
+- Database-agnostic design (SQLAlchemy)
+- Transaction management
+- Query optimization
+- Migration support (Alembic)
+
+#### 3. Analysis Layer
+
+**Purpose**: Analyze job characteristics and extract insights
+
+**Components**:
+- `JobAnalyzer`: Performance analysis and bottleneck detection
+- `JobSimilarityCalculator`: Calculate job similarity scores
+- `FeatureExtractor`: Extract ML features from job data
+
+**Key Features**:
+- Resource efficiency metrics
+- Bottleneck identification (CPU, memory, I/O)
+- Issue detection (data skew, spills, failures)
+- Similarity-based job matching
+
+#### 4. Recommendation Layer
+
+**Purpose**: Generate optimal resource configurations
+
+**Components**:
+- `BaseRecommender`: Abstract recommender interface
+- `SimilarityRecommender`: History-based recommendations
+- `MLRecommender`: ML model predictions
+- `RuleBasedRecommender`: Heuristic-based suggestions
+
+**Key Features**:
+- Multiple recommendation strategies
+- Confidence scoring
+- Cost-performance trade-offs
+- Feedback loop integration
+
+#### 5. API Layer
+
+**Purpose**: Expose functionality to clients
+
+**Components**:
+- REST API (Flask)
+- CLI interface (Click)
+- WebSocket support (future)
+
+**Endpoints**:
+- `/recommend`: Get resource recommendations
+- `/jobs`: List and query historical jobs
+- `/analyze`: Analyze specific jobs
+- `/feedback`: Submit recommendation feedback
+
+### Data Flow
+
+#### Collection Flow
+```
+Event Logs → Collector → Parser → Normalizer → Repository → Database
 ```
 
-## Contributing
+#### Recommendation Flow
+```
+User Request → API → Recommender → Analyzer → Repository → Database
+                ↓
+          Recommendation ← Model/Rules ← Historical Data
+```
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+#### Analysis Flow
+```
+Job ID → Repository → Job Data → Analyzer → Insights
+                                      ↓
+                               Feature Extraction
+                                      ↓
+                               Similarity Matching
+```
+
+For more detailed architecture information, see [docs/architecture.md](docs/architecture.md).
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Community
-
-- GitHub Issues: Bug reports and feature requests
-- Discussions: Questions and general discussion
-- Slack: [Join our community](link-to-slack)
 
 ## Citation
 
@@ -162,19 +268,6 @@ If you use this tool in your research or production systems, please cite:
   url = {https://github.com/gridatek/spark-optimizer}
 }
 ```
-
-## Roadmap
-
-- [x] Basic event log parsing
-- [x] SQLite storage backend
-- [x] Similarity-based recommendations
-- [x] Integration with Spark History Server
-- [x] Cloud provider integrations (AWS EMR, Databricks, GCP Dataproc)
-- [x] ML-based prediction models
-- [x] Web UI dashboard
-- [x] Real-time monitoring and alerts
-- [x] Auto-tuning capabilities
-- [x] Advanced cost modeling and multi-cloud comparison
 
 ## New Features (v0.2.0)
 
