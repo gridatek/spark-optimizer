@@ -268,27 +268,3 @@ If you use this tool in your research or production systems, please cite:
   url = {https://github.com/gridatek/spark-optimizer}
 }
 ```
-
-## New Features (v0.2.0)
-
-### Real-time Monitoring
-- WebSocket-based real-time updates for live dashboard
-- Application status tracking with progress monitoring
-- Metric streaming and historical data retention
-- Configurable alert rules with severity levels (info, warning, error, critical)
-- Alert acknowledgement and resolution workflow
-
-### Auto-tuning Capabilities
-- Dynamic configuration adjustment during job execution
-- Multiple tuning strategies: conservative, moderate, aggressive
-- Feedback loop learning for improved future recommendations
-- Session-based tuning with best configuration tracking
-- Parameter range customization and constraints
-
-### Advanced Cost Modeling
-- Multi-cloud cost estimation (AWS, GCP, Azure)
-- Instance type recommendations based on workload
-- Spot/preemptible instance strategy recommendations
-- Cost-duration trade-off frontier analysis
-- Migration cost estimation between cloud providers
-- Regional pricing comparison
