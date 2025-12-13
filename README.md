@@ -137,8 +137,8 @@ The Spark Resource Optimizer is designed with a modular, layered architecture th
 ┌─────────────────────────────────────────────────────────────┐
 │                      Data Sources                           │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │ Spark Event  │  │    Spark     │  │  Prometheus  │       │
-│  │    Logs      │  │   History    │  │   /Grafana   │       │
+│  │ Spark Event  │  │    Spark     │  │  Cloud APIs  │       │
+│  │    Logs      │  │   History    │  │              │       │
 │  └──────────────┘  └──────────────┘  └──────────────┘       │
 └─────────────────────────────────────────────────────────────┘
 ```
