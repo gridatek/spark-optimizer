@@ -193,7 +193,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report-chromium
           path: web-ui-dashboard/playwright-report/
@@ -201,7 +201,7 @@ jobs:
 
       - name: Upload test videos
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-videos-chromium
           path: web-ui-dashboard/test-results/
