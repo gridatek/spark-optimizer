@@ -15,7 +15,7 @@ mypy>=0.990
 pylint>=2.15.0
 
 # Pre-commit hooks
-pre-commit>=2.20.0
+pre-commit>=4.6.0
 
 # Documentation
 sphinx>=5.0.0
