@@ -83,7 +83,7 @@ aws = [
     "boto3>=1.26.0",
 ]
 gcp = [
-    "google-cloud-dataproc>=5.0.0",
+    "google-cloud-dataproc>=5.30.0",
     "google-cloud-monitoring>=2.11.0",
 ]
 # Note: databricks extra removed as it only had requests which is already a core dependency
