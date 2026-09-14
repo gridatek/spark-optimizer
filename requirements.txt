@@ -25,7 +25,7 @@ loguru>=0.6.0
 pydantic>=1.9.0
 
 # HTTP client
-requests>=2.27.0
+requests>=2.34.2
 
 # CLI
 click>=8.0.0
